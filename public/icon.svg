@@ -1,0 +1,14 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="180" height="180" rx="40" fill="#0f2d5e"/>
+  <path d="M90 28L38 52V96C38 126 64 152 90 158C116 152 142 126 142 96V52L90 28Z" fill="white" opacity="0.15"/>
+  <path d="M90 34L44 56V96C44 123 67 147 90 153C113 147 136 123 136 96V56L90 34Z" fill="white" opacity="0.2"/>
+  <path d="M90 42L50 62V96C50 120 70 142 90 148C110 142 130 120 130 96V62L90 42Z" fill="#1e50a2"/>
+  <path d="M90 42L50 62V96C50 120 70 142 90 148C110 142 130 120 130 96V62L90 42Z" fill="url(#shieldGrad)"/>
+  <path d="M75 94L85 104L108 78" stroke="white" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="shieldGrad" x1="90" y1="42" x2="90" y2="148" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563eb" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#0f2d5e" stop-opacity="0.8"/>
+    </linearGradient>
+  </defs>
+</svg>

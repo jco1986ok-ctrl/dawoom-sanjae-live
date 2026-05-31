@@ -1,0 +1,26 @@
+{
+  "id": "/paros-pwa-v8",
+  "name": "파로스 노무법인 전산관리시스템",
+  "short_name": "파로스 전산",
+  "description": "파로스 노무법인 공식 전산관리시스템 — 업무상 질병 산재 지킴이 파로",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon-192.png?v=8",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png?v=8",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
