@@ -1,9 +1,5 @@
 import type { LeadDetail } from "@/lib/lead-detail";
-import {
-  COLLABORATION_OWNER_LABELS,
-  normalizeOwnerRole,
-  type CollaborationOwnerRole,
-} from "@/lib/collaboration-workflow";
+import { normalizeOwnerRole } from "@/lib/collaboration-workflow";
 
 export type V2MainSummaryCardId = "sales_wait" | "docs_prep" | "agency" | "delay";
 
@@ -73,36 +69,80 @@ export function computeV2MainSummaryCards(
   });
 }
 
-export type V2BottleneckStat = {
-  role: CollaborationOwnerRole;
+export type V2WorkQueueStageId =
+  | "consult_wait"
+  | "docs_collect_wait"
+  | "brief_wait"
+  | "agency_wait";
+
+export type V2WorkQueueStageStat = {
+  stage: V2WorkQueueStageId;
   label: string;
   count: number;
-  barClass: string;
+  color: string;
 };
 
-const BOTTLENECK_BAR: Record<CollaborationOwnerRole, string> = {
-  inside_staff: "bg-sky-500",
-  field_manager: "bg-amber-500",
-  attorney: "bg-violet-500",
-};
+const WORK_QUEUE_STAGES: {
+  stage: V2WorkQueueStageId;
+  label: string;
+  color: string;
+}[] = [
+  { stage: "consult_wait", label: "1차 상담 대기", color: "hsl(217 91% 60%)" },
+  { stage: "docs_collect_wait", label: "서류 징구 대기", color: "hsl(45 93% 47%)" },
+  { stage: "brief_wait", label: "서면 작성 대기", color: "hsl(262 83% 58%)" },
+  { stage: "agency_wait", label: "공단 접수 대기", color: "hsl(142 71% 45%)" },
+];
 
-export function computeV2BottleneckStats(leads: LeadDetail[]): V2BottleneckStat[] {
-  const counts: Record<CollaborationOwnerRole, number> = {
-    inside_staff: 0,
-    field_manager: 0,
-    attorney: 0,
+const WORK_QUEUE_EXCLUDED = new Set([
+  "산재승인(완료)",
+  "종결(수임불가)",
+  "종결",
+  "보류",
+]);
+
+const CONSULT_WAIT_STATUSES = new Set(["신규", "부재중", "상담중", "연락대기"]);
+const AGENCY_WAIT_STATUSES = new Set(["공단접수(심사중)", "불승인(재심사)"]);
+
+/** 진행 상태 + 담당 단계 → 업무 대기 버킷 */
+export function resolveV2WorkQueueStage(lead: LeadDetail): V2WorkQueueStageId | null {
+  const status = lead.consultation_status;
+  if (WORK_QUEUE_EXCLUDED.has(status)) return null;
+  if (AGENCY_WAIT_STATUSES.has(status)) return "agency_wait";
+  if (CONSULT_WAIT_STATUSES.has(status)) return "consult_wait";
+
+  const owner = normalizeOwnerRole(lead.current_owner_role);
+  if (owner === "attorney") return "brief_wait";
+  if (owner === "field_manager") return "docs_collect_wait";
+  if (status === "계약완료" || status === "서류준비중") return "docs_collect_wait";
+
+  return "consult_wait";
+}
+
+export function computeV2WorkQueueStats(leads: LeadDetail[]): V2WorkQueueStageStat[] {
+  const counts: Record<V2WorkQueueStageId, number> = {
+    consult_wait: 0,
+    docs_collect_wait: 0,
+    brief_wait: 0,
+    agency_wait: 0,
   };
 
   for (const lead of leads) {
-    if (lead.consultation_status === "산재승인(완료)") continue;
-    const role = normalizeOwnerRole(lead.current_owner_role);
-    counts[role] += 1;
+    const stage = resolveV2WorkQueueStage(lead);
+    if (stage) counts[stage] += 1;
   }
 
-  return (["inside_staff", "field_manager", "attorney"] as const).map((role) => ({
-    role,
-    label: COLLABORATION_OWNER_LABELS[role],
-    count: counts[role],
-    barClass: BOTTLENECK_BAR[role],
+  return WORK_QUEUE_STAGES.map(({ stage, label, color }) => ({
+    stage,
+    label,
+    count: counts[stage],
+    color,
   }));
+}
+
+/** @deprecated V2WorkQueueStageStat 사용 */
+export type V2BottleneckStat = V2WorkQueueStageStat;
+
+/** @deprecated computeV2WorkQueueStats 사용 */
+export function computeV2BottleneckStats(leads: LeadDetail[]): V2WorkQueueStageStat[] {
+  return computeV2WorkQueueStats(leads);
 }

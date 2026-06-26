@@ -12,13 +12,13 @@ import {
   V2_OVERVIEW_TAB_LABELS,
 } from "@/lib/v2-overview-tabs";
 import {
-  computeV2BottleneckStats,
+  computeV2WorkQueueStats,
   computeV2MainSummaryCards,
 } from "@/lib/v2-overview-summary";
 import { useV2OverviewHashTab } from "./use-v2-overview-hash-tab";
 import V2OverviewTabPanels from "./V2OverviewTabPanels";
 import V2SummaryCards from "./V2SummaryCards";
-import V2BottleneckStats from "./V2BottleneckStats";
+import V2WorkQueueStats from "./V2WorkQueueStats";
 import V2OverviewActionBar from "./V2OverviewActionBar";
 import { v2SurfaceCard } from "../_lib/v2-ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -139,8 +139,8 @@ export default function V2OverviewPanel({
     () => computeV2MainSummaryCards(statusCount),
     [statusCount],
   );
-  const bottleneckStats = useMemo(
-    () => computeV2BottleneckStats(displayLeads),
+  const workQueueStats = useMemo(
+    () => computeV2WorkQueueStats(displayLeads),
     [displayLeads],
   );
   const spotlightLeads = useMemo(() => sortLeadsByRecency(displayLeads).slice(0, 5), [displayLeads]);
@@ -151,7 +151,7 @@ export default function V2OverviewPanel({
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-2.5 shadow-sm border border-gray-100">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900">종합 요약</p>
-          <p className="text-[11px] text-slate-500">퍼널 · 병목 · 최근 접수 한눈에</p>
+          <p className="text-[11px] text-slate-500">퍼널 · 업무 대기 · 최근 접수 한눈에</p>
         </div>
         <V2OverviewActionBar agentId={intakeAgentId} testRole={currentUserRole} />
       </div>
@@ -159,10 +159,10 @@ export default function V2OverviewPanel({
       {/* KPI 카드 */}
       <V2SummaryCards cards={summaryCards} />
 
-      {/* 병목 + 최근 접수 */}
+      {/* 업무 대기 + 최근 접수 */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-4">
-          <V2BottleneckStats stats={bottleneckStats} />
+          <V2WorkQueueStats stats={workQueueStats} />
         </div>
 
         <Card className={cn(v2SurfaceCard(), "lg:col-span-8 gap-0 py-0 h-full")}>
