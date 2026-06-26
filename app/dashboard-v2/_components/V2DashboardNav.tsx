@@ -1,9 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, LogOut, User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import type { AppUser } from "@/lib/types";
 import ChangePasswordModal from "@/app/dashboard/_components/ChangePasswordModal";
+import DashboardBoardSwitch, {
+  DashboardBoardSwitchCompact,
+} from "@/app/dashboard/_components/DashboardBoardSwitch";
 import ParoLogo, { PARO_GREETING } from "@/components/ParoLogo";
 import { DASHBOARD_SHELL_X } from "@/app/dashboard/_components/dashboard-list-layout";
 import V2NotificationBell from "./V2NotificationBell";
@@ -49,14 +51,8 @@ export default function V2DashboardNav({ user }: { user: AppUser }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <Link
-            href="/dashboard"
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full
-              border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            라이브 대시보드
-          </Link>
+          <DashboardBoardSwitchCompact userRole={user.role} />
+          <DashboardBoardSwitch userRole={user.role} />
 
           <div className="rounded-xl bg-[#0f2d5e] p-0.5">
             <V2NotificationBell />

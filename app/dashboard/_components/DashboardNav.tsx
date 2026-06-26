@@ -4,6 +4,7 @@ import { LogOut, User } from "lucide-react";
 import type { AppUser } from "@/lib/types";
 import ChangePasswordModal from "./ChangePasswordModal";
 import ParoLogo, { PARO_GREETING } from "@/components/ParoLogo";
+import DashboardBoardSwitch, { DashboardBoardSwitchCompact } from "./DashboardBoardSwitch";
 
 const ROLE_LABEL: Record<string, string> = {
   총괄공식파트너: "총괄 파트너",
@@ -46,7 +47,9 @@ export default function DashboardNav({ user }: { user: AppUser }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <DashboardBoardSwitchCompact userRole={user.role} />
+          <DashboardBoardSwitch userRole={user.role} />
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-muted-foreground hidden sm:block" />
             <span className="text-sm font-medium text-foreground hidden md:inline">{user.name}</span>
