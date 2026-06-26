@@ -12,11 +12,14 @@ import {
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import LeadStatusBadge from "@/app/dashboard/_components/LeadStatusBadge";
 import { CustomerDetailModal } from "@/app/dashboard/_components/CustomerDetailModal";
-import V2FloatingHandoffPanel from "./V2FloatingHandoffPanel";
+import V2DetailActionPanel from "./V2DetailActionPanel";
 import {
   buildV2CustomerDetailRow,
   type V2CustomerDetailRow,
 } from "../_lib/v2-customer-detail";
+import type { AdminUserListItem } from "@/lib/user-lineage";
+import { markLeadAssignmentRead } from "../_actions/assignment";
+import { cn } from "@/lib/utils";
 
 const COLUMNS: {
   role: CollaborationOwnerRole;
@@ -50,6 +53,9 @@ const COLUMNS: {
 
 interface Props {
   leads: LeadDetail[];
+  users?: AdminUserListItem[];
+  viewerUserId?: string;
+  myTasksOnly?: boolean;
   canChangeStatus: boolean;
   canWriteMemo: boolean;
   viewerRole: string;
@@ -57,6 +63,9 @@ interface Props {
 
 export default function V2InsideStaffBoard({
   leads,
+  users = [],
+  viewerUserId = "",
+  myTasksOnly = false,
   canChangeStatus,
   canWriteMemo,
   viewerRole,
@@ -64,6 +73,31 @@ export default function V2InsideStaffBoard({
   const [detailTarget, setDetailTarget] = useState<V2CustomerDetailRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [localRows, setLocalRows] = useState<Record<string, CollaborationOwnerRole>>({});
+  const [assignmentPatches, setAssignmentPatches] = useState<
+    Record<
+      string,
+      {
+        assignedUserId: string | null;
+        assignedUserName: string | null;
+        assignmentMemo: string | null;
+        isRead: boolean;
+      }
+    >
+  >({});
+
+  const scopedLeads = useMemo(() => {
+    let list = leads;
+    if (myTasksOnly && viewerUserId) {
+      list = list.filter((l) => l.assigned_user_id === viewerUserId);
+      list = [...list].sort((a, b) => {
+        const aUnread = a.is_read === false ? 0 : 1;
+        const bUnread = b.is_read === false ? 0 : 1;
+        if (aUnread !== bUnread) return aUnread - bUnread;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    }
+    return list;
+  }, [leads, myTasksOnly, viewerUserId]);
 
   const grouped = useMemo(() => {
     const buckets: Record<CollaborationOwnerRole, LeadDetail[]> = {
@@ -71,16 +105,53 @@ export default function V2InsideStaffBoard({
       field_manager: [],
       attorney: [],
     };
-    for (const lead of leads) {
+    for (const lead of scopedLeads) {
       const role = localRows[lead.id] ?? normalizeOwnerRole(lead.current_owner_role);
       buckets[role].push(lead);
     }
     return buckets;
-  }, [leads, localRows]);
+  }, [scopedLeads, localRows]);
+
+  const rowHighlightClass = (lead: LeadDetail) => {
+    const patch = assignmentPatches[lead.id];
+    const isRead = patch ? patch.isRead : lead.is_read !== false;
+    return myTasksOnly && !isRead ? "bg-amber-50 ring-1 ring-inset ring-amber-300" : "";
+  };
 
   const openDetail = (lead: LeadDetail) => {
-    setDetailTarget(buildV2CustomerDetailRow(lead));
+    const row = buildV2CustomerDetailRow(lead, users);
+    const patched = assignmentPatches[lead.id];
+    const merged = patched
+      ? {
+          ...row,
+          assignedUserId: patched.assignedUserId,
+          assignedUserName: patched.assignedUserName,
+          assignmentMemo: patched.assignmentMemo,
+          isRead: patched.isRead,
+        }
+      : row;
+    setDetailTarget(merged);
     setDetailOpen(true);
+
+    if (
+      myTasksOnly &&
+      viewerUserId &&
+      merged.assignedUserId === viewerUserId &&
+      !merged.isRead
+    ) {
+      void markLeadAssignmentRead(lead.id, viewerUserId).then(() => {
+        setAssignmentPatches((prev) => ({
+          ...prev,
+          [lead.id]: {
+            assignedUserId: merged.assignedUserId,
+            assignedUserName: merged.assignedUserName,
+            assignmentMemo: merged.assignmentMemo,
+            isRead: true,
+          },
+        }));
+        setDetailTarget((prev) => (prev?.id === lead.id ? { ...prev, isRead: true } : prev));
+      });
+    }
   };
 
   const applyOwnerRole = (leadId: string, role: CollaborationOwnerRole) => {
@@ -90,8 +161,48 @@ export default function V2InsideStaffBoard({
     );
   };
 
+  const applyAssignment = (
+    leadId: string,
+    patch: {
+      assignedUserId: string;
+      assignedUserName: string;
+      assignmentMemo: string | null;
+      isRead: boolean;
+    },
+  ) => {
+    setAssignmentPatches((prev) => ({
+      ...prev,
+      [leadId]: {
+        assignedUserId: patch.assignedUserId,
+        assignedUserName: patch.assignedUserName,
+        assignmentMemo: patch.assignmentMemo,
+        isRead: patch.isRead,
+      },
+    }));
+    setDetailTarget((prev) =>
+      prev?.id === leadId
+        ? {
+            ...prev,
+            assignedUserId: patch.assignedUserId,
+            assignedUserName: patch.assignedUserName,
+            assignmentMemo: patch.assignmentMemo,
+            isRead: patch.isRead,
+          }
+        : prev,
+    );
+  };
+
   return (
     <>
+      {myTasksOnly && (
+        <p className="px-4 sm:px-5 pt-4 text-[11px] text-slate-400">
+          <span className="inline-flex items-center gap-1 text-amber-700 font-semibold mr-2">
+            내 업무 {scopedLeads.length}건
+          </span>
+          미열람 배정 건은 노란색으로 표시됩니다.
+        </p>
+      )}
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 p-4 sm:p-5">
         {COLUMNS.map((col) => {
           const items = grouped[col.role];
@@ -122,8 +233,11 @@ export default function V2InsideStaffBoard({
                       <button
                         type="button"
                         onClick={() => openDetail(lead)}
-                        className="w-full text-left rounded-xl border border-white bg-white/90 px-3 py-3 shadow-sm
-                          hover:border-[#0f2d5e]/20 hover:shadow transition-all"
+                        className={cn(
+                          "w-full text-left rounded-xl border border-white bg-white/90 px-3 py-3 shadow-sm",
+                          "hover:border-[#0f2d5e]/20 hover:shadow transition-all",
+                          rowHighlightClass(lead),
+                        )}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <p className="font-bold text-slate-900 text-sm truncate">
@@ -163,9 +277,11 @@ export default function V2InsideStaffBoard({
       />
 
       {detailOpen && detailTarget && (
-        <V2FloatingHandoffPanel
+        <V2DetailActionPanel
           row={detailTarget}
+          users={users}
           onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
+          onAssigned={(patch) => applyAssignment(detailTarget.id, patch)}
         />
       )}
     </>

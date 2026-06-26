@@ -31,5 +31,8 @@ export interface LeadDetail {
   is_viewer_direct?: boolean;
   assigned_to?: string | null;
   assigned_attorney_name?: string | null;
+  assigned_user_id?: string | null;
+  assignment_memo?: string | null;
+  is_read?: boolean | null;
   current_owner_role?: CollaborationOwnerRole | string | null;
 }

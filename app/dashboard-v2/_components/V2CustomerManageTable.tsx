@@ -19,7 +19,6 @@ import {
   applyDocsPatchToDetailRow,
   applyOtherDocsPatchToDetailRow,
   notesToComments,
-  type CustomerDetailRow,
 } from "@/app/dashboard/_components/CustomerDetailModal";
 import {
   CUSTOMER_QUICK_FILTERS,
@@ -54,12 +53,18 @@ import { PartnerConfirmBadge } from "@/app/dashboard/_components/PartnerConfirmB
 import { BulkDocumentsDownloadButton } from "@/app/dashboard/_components/BulkDocumentsDownloadButton";
 import { DocCollectionProgressBadge, DocumentsWithProgress } from "@/app/dashboard/_components/DocCollectionProgressBadge";
 import { deleteLead } from "@/app/dashboard/_actions/leads";
-import V2FloatingHandoffPanel from "./V2FloatingHandoffPanel";
+import V2DetailActionPanel from "./V2DetailActionPanel";
 import { buildV2CustomerDetailRow, type V2CustomerDetailRow } from "../_lib/v2-customer-detail";
 import type { CollaborationOwnerRole } from "@/lib/collaboration-workflow";
+import type { AdminUserListItem } from "@/lib/user-lineage";
+import { markLeadAssignmentRead } from "../_actions/assignment";
+import { cn } from "@/lib/utils";
 
 interface Props {
   leads?: LeadDetail[];
+  users?: AdminUserListItem[];
+  viewerUserId?: string;
+  myTasksOnly?: boolean;
   /** 노무사 배당 건만 클라이언트에서 재조회 */
   assignedTo?: string;
   /** false면 부모에서 스코핑한 leads만 사용 */
@@ -74,6 +79,9 @@ interface Props {
 
 export default function V2CustomerManageTable({
   leads: initialLeads = [],
+  users = [],
+  viewerUserId = "",
+  myTasksOnly = false,
   assignedTo,
   clientRefetch = true,
   viewerRole = "",
@@ -92,7 +100,7 @@ export default function V2CustomerManageTable({
   });
 
   const [rows, setRows] = useState<V2CustomerDetailRow[]>(() =>
-    initialLeads.map(buildV2CustomerDetailRow),
+    initialLeads.map((l) => buildV2CustomerDetailRow(l, users)),
   );
   const [detailTarget, setDetailTarget] = useState<V2CustomerDetailRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -102,23 +110,37 @@ export default function V2CustomerManageTable({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    setRows(customers.map(buildV2CustomerDetailRow));
-  }, [customers]);
+    setRows(customers.map((l) => buildV2CustomerDetailRow(l, users)));
+  }, [customers, users]);
 
   useEffect(() => {
     if (!detailOpen || !detailTarget) return;
     const fresh = customers.find((c) => c.id === detailTarget.id);
-    if (fresh) setDetailTarget(buildV2CustomerDetailRow(fresh));
-  }, [customers, detailOpen, detailTarget?.id]);
+    if (fresh) setDetailTarget(buildV2CustomerDetailRow(fresh, users));
+  }, [customers, detailOpen, detailTarget?.id, users]);
+
+  const scopedRows = useMemo(() => {
+    let list = rows;
+    if (myTasksOnly && viewerUserId) {
+      list = list.filter((r) => r.assignedUserId === viewerUserId);
+      list = [...list].sort((a, b) => {
+        const aUnread = a.isRead ? 1 : 0;
+        const bUnread = b.isRead ? 1 : 0;
+        if (aUnread !== bUnread) return aUnread - bUnread;
+        return b.submittedAt.localeCompare(a.submittedAt);
+      });
+    }
+    return list;
+  }, [rows, myTasksOnly, viewerUserId]);
 
   const filteredRows = useMemo(
     () =>
-      rows.filter(
+      scopedRows.filter(
         (r) =>
           matchesCustomerQuickFilter(r.consultationStatus, quickFilter) &&
           matchesDiseaseCategoryFilter(r.diseaseCategory, diseaseFilter),
       ),
-    [rows, quickFilter, diseaseFilter],
+    [scopedRows, quickFilter, diseaseFilter],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / CUSTOMER_TABLE_PAGE_SIZE));
@@ -143,7 +165,7 @@ export default function V2CustomerManageTable({
     setPage(1);
   };
 
-  const syncRowData = (leadId: string, patch: Partial<CustomerDetailRow>) => {
+  const syncRowData = (leadId: string, patch: Partial<V2CustomerDetailRow>) => {
     setRows((prev) =>
       prev.map((r) => (r.id === leadId ? { ...r, ...patch } : r)),
     );
@@ -168,10 +190,21 @@ export default function V2CustomerManageTable({
     }
   };
 
-  const openDetail = (row: CustomerDetailRow) => {
+  const openDetail = (row: V2CustomerDetailRow) => {
     const latest = rows.find((r) => r.id === row.id) ?? row;
     setDetailTarget(latest);
     setDetailOpen(true);
+
+    if (
+      myTasksOnly &&
+      viewerUserId &&
+      latest.assignedUserId === viewerUserId &&
+      !latest.isRead
+    ) {
+      void markLeadAssignmentRead(latest.id, viewerUserId).then(() => {
+        syncRowData(latest.id, { isRead: true });
+      });
+    }
   };
 
   const applyOwnerRole = (leadId: string, role: CollaborationOwnerRole) => {
@@ -182,6 +215,26 @@ export default function V2CustomerManageTable({
       prev?.id === leadId ? { ...prev, currentOwnerRole: role } : prev,
     );
   };
+
+  const applyAssignment = (
+    leadId: string,
+    patch: {
+      assignedUserId: string;
+      assignedUserName: string;
+      assignmentMemo: string | null;
+      isRead: boolean;
+    },
+  ) => {
+    syncRowData(leadId, {
+      assignedUserId: patch.assignedUserId,
+      assignedUserName: patch.assignedUserName,
+      assignmentMemo: patch.assignmentMemo,
+      isRead: patch.isRead,
+    });
+  };
+
+  const rowHighlightClass = (row: V2CustomerDetailRow) =>
+    myTasksOnly && !row.isRead ? "bg-amber-50 ring-1 ring-inset ring-amber-300" : "";
 
   const closeDetail = () => {
     setDetailOpen(false);
@@ -268,6 +321,11 @@ export default function V2CustomerManageTable({
           })}
         </div>
         <p className="text-[11px] text-slate-400 mt-2.5">
+          {myTasksOnly && (
+            <span className="inline-flex items-center gap-1 text-amber-700 font-semibold mr-2">
+              내 업무 {scopedRows.length}건
+            </span>
+          )}
           {filteredRows.length}건 표시
           {filteredRows.length !== rows.length && ` (전체 ${rows.length}건)`}
           {totalPages > 1 && ` · ${safePage}/${totalPages}페이지`}
@@ -279,21 +337,33 @@ export default function V2CustomerManageTable({
       {filteredRows.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
           <Inbox className="w-10 h-10 opacity-40" />
-          <p className="text-sm">선택한 필터에 해당하는 고객이 없습니다.</p>
-          <button
-            type="button"
-            onClick={() => handleQuickFilter("all")}
-            className="text-xs font-semibold text-[#3182f6] hover:underline"
-          >
-            전체 보기로 돌아가기
-          </button>
+          <p className="text-sm">
+            {myTasksOnly
+              ? "나에게 배정된 업무가 없습니다."
+              : "선택한 필터에 해당하는 고객이 없습니다."}
+          </p>
+          {!myTasksOnly && (
+            <button
+              type="button"
+              onClick={() => handleQuickFilter("all")}
+              className="text-xs font-semibold text-[#3182f6] hover:underline"
+            >
+              전체 보기로 돌아가기
+            </button>
+          )}
         </div>
       ) : (
         <>
           {/* 모바일: 카드 리스트 */}
           <MobileCardList>
             {pagedRows.map((row) => (
-              <MobileCard key={row.id} className="cursor-pointer hover:bg-gray-50 transition-colors">
+              <MobileCard
+                key={row.id}
+                className={cn(
+                  "cursor-pointer hover:bg-gray-50 transition-colors",
+                  rowHighlightClass(row),
+                )}
+              >
                 <div
                   role="button"
                   tabIndex={0}
@@ -423,7 +493,11 @@ export default function V2CustomerManageTable({
           {/* 중간 폭(md~lg): Flex 래핑 행 */}
           <FluidRowList>
             {pagedRows.map((row) => (
-              <FluidDataRow key={row.id} onClick={() => openDetail(row)}>
+              <FluidDataRow
+                key={row.id}
+                onClick={() => openDetail(row)}
+                className={rowHighlightClass(row)}
+              >
                 <FluidRowBand>
                   <FluidRowField className="flex-1 min-w-0 w-32">
                     <div className="flex flex-col gap-0.5">
@@ -587,7 +661,10 @@ export default function V2CustomerManageTable({
                   <tr
                     key={row.id}
                     onClick={() => openDetail(row)}
-                    className="bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+                    className={cn(
+                      "bg-white hover:bg-gray-50 transition-colors cursor-pointer",
+                      rowHighlightClass(row),
+                    )}
                   >
                     <td className="py-3 px-4 min-w-0 align-middle">
                       <div className="flex flex-col gap-1">
@@ -692,18 +769,24 @@ export default function V2CustomerManageTable({
         onStatusUpdated={(id, status, notes) => updateStatus(id, status, notes)}
         onDocsUpdated={(id, patch) => {
           setRows((prev) =>
-            prev.map((r) => (r.id === id ? applyDocsPatchToDetailRow(r, patch) : r)),
+            prev.map((r) =>
+              r.id === id ? { ...r, ...applyDocsPatchToDetailRow(r, patch) } : r,
+            ),
           );
           setDetailTarget((prev) =>
-            prev?.id === id ? applyDocsPatchToDetailRow(prev, patch) : prev,
+            prev?.id === id ? { ...prev, ...applyDocsPatchToDetailRow(prev, patch) } : prev,
           );
         }}
         onOtherDocsUpdated={(id, otherDocs) => {
           setRows((prev) =>
-            prev.map((r) => (r.id === id ? applyOtherDocsPatchToDetailRow(r, otherDocs) : r)),
+            prev.map((r) =>
+              r.id === id ? { ...r, ...applyOtherDocsPatchToDetailRow(r, otherDocs) } : r,
+            ),
           );
           setDetailTarget((prev) =>
-            prev?.id === id ? applyOtherDocsPatchToDetailRow(prev, otherDocs) : prev,
+            prev?.id === id
+              ? { ...prev, ...applyOtherDocsPatchToDetailRow(prev, otherDocs) }
+              : prev,
           );
         }}
         onDiseaseCategoryUpdated={(id, category) => {
@@ -712,9 +795,11 @@ export default function V2CustomerManageTable({
       />
 
       {detailOpen && detailTarget && (
-        <V2FloatingHandoffPanel
+        <V2DetailActionPanel
           row={detailTarget}
+          users={users}
           onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
+          onAssigned={(patch) => applyAssignment(detailTarget.id, patch)}
         />
       )}
     </>

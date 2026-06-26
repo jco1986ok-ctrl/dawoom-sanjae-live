@@ -2,12 +2,8 @@
 
 import { useMemo, useState } from "react";
 import {
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
-  ClipboardList,
-  FileText,
-  Loader2,
   TrendingUp,
 } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
@@ -17,13 +13,18 @@ import CustomerIntakeLinkBanner from "@/app/dashboard/_components/CustomerIntake
 import AdminMasterInviteButton from "@/app/dashboard/admin/_components/AdminMasterInviteButton";
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import {
-  computeV2OverviewKpi,
   sortLeadsByRecency,
   V2_OVERVIEW_TAB_IDS,
   V2_OVERVIEW_TAB_LABELS,
 } from "@/lib/v2-overview-tabs";
+import {
+  computeV2BottleneckStats,
+  computeV2MainSummaryCards,
+} from "@/lib/v2-overview-summary";
 import { useV2OverviewHashTab } from "./use-v2-overview-hash-tab";
 import V2OverviewTabPanels from "./V2OverviewTabPanels";
+import V2SummaryCards from "./V2SummaryCards";
+import V2BottleneckStats from "./V2BottleneckStats";
 
 interface Props {
   leads: LeadDetail[];
@@ -32,26 +33,6 @@ interface Props {
   statusCount: Record<string, number>;
   intakeAgentId: string;
   currentUserRole: DashboardTestRole;
-}
-
-function KpiCard({
-  label,
-  value,
-  icon,
-  accent,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  accent: string;
-}) {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-4 flex flex-col gap-2 min-w-0">
-      <div className={`${accent} opacity-80`}>{icon}</div>
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className={`text-2xl sm:text-3xl font-black tabular-nums ${accent}`}>{value}</p>
-    </div>
-  );
 }
 
 function IntakeRow({ lead }: { lead: LeadDetail }) {
@@ -156,7 +137,14 @@ export default function V2OverviewPanel({
   currentUserRole,
 }: Props) {
   const { activeTab, setHashTab } = useV2OverviewHashTab();
-  const kpi = useMemo(() => computeV2OverviewKpi(statusCount), [statusCount]);
+  const summaryCards = useMemo(
+    () => computeV2MainSummaryCards(statusCount),
+    [statusCount],
+  );
+  const bottleneckStats = useMemo(
+    () => computeV2BottleneckStats(displayLeads),
+    [displayLeads],
+  );
   const spotlightLeads = useMemo(() => sortLeadsByRecency(displayLeads).slice(0, 5), [displayLeads]);
 
   return (
@@ -170,32 +158,8 @@ export default function V2OverviewPanel({
         aria-label="종합 요약 핵심 영역"
       >
         <div className="p-4 sm:p-5 flex flex-col gap-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <KpiCard
-              label="접수 건수"
-              value={kpi.totalIntake}
-              icon={<FileText className="w-5 h-5" />}
-              accent="text-[#0f2d5e]"
-            />
-            <KpiCard
-              label="상담 건수"
-              value={kpi.consulting}
-              icon={<ClipboardList className="w-5 h-5" />}
-              accent="text-sky-600"
-            />
-            <KpiCard
-              label="진행 중"
-              value={kpi.inProgress}
-              icon={<Loader2 className="w-5 h-5" />}
-              accent="text-amber-600"
-            />
-            <KpiCard
-              label="완료"
-              value={kpi.completed}
-              icon={<CheckCircle2 className="w-5 h-5" />}
-              accent="text-emerald-600"
-            />
-          </div>
+          <V2SummaryCards cards={summaryCards} />
+          <V2BottleneckStats stats={bottleneckStats} />
 
           <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-white">

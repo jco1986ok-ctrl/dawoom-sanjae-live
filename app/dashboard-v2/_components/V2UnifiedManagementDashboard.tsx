@@ -224,6 +224,8 @@ export default function V2UnifiedManagementDashboard({
             </div>
             <V2CustomerCollaborationSection
               leads={displayLeads}
+              users={enrichedUsers}
+              viewerUserId={simulation.effectiveViewerId}
               assignedTo={analyticsTier === "staff" ? simulation.effectiveViewerId : undefined}
               clientRefetch={analyticsTier === "executive"}
               viewerRole={viewerRole}
