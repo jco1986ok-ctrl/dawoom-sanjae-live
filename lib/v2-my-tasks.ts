@@ -1,5 +1,6 @@
 import type { DashboardTestRole } from "@/lib/dashboard-rbac";
 import type { LeadDetail } from "@/lib/lead-detail";
+import { getLeadLastUpdatedAt } from "@/lib/v2-task-aging";
 
 /** V2 — 마스터·총괄·대표는 전체, 그 외는 내 업무만 */
 export function shouldUseV2MyTasksView(testRole: DashboardTestRole): boolean {
@@ -16,7 +17,7 @@ export function sortV2MyTaskLeads(leads: LeadDetail[]): LeadDetail[] {
     const aUnread = a.is_read === false ? 0 : 1;
     const bUnread = b.is_read === false ? 0 : 1;
     if (aUnread !== bUnread) return aUnread - bUnread;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    return new Date(getLeadLastUpdatedAt(a)).getTime() - new Date(getLeadLastUpdatedAt(b)).getTime();
   });
 }
 

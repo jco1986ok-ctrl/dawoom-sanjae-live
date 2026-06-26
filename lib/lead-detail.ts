@@ -13,6 +13,8 @@ export interface LeadDetail {
   fee_amount?: number | null;
   consultation_status: string;
   created_at: string;
+  last_updated_at?: string | null;
+  callback_date?: string | null;
   referral_source: string | null;
   referrer?: string | null;
   notes: string | null;

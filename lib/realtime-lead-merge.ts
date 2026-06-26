@@ -35,6 +35,8 @@ export function realtimeRowToLeadDetail(row: RealtimeLeadRow): LeadDetail {
     fee_amount: nullableNum(row.fee_amount),
     consultation_status: str(row.consultation_status, "신규"),
     created_at: str(row.created_at, new Date().toISOString()),
+    last_updated_at: nullableStr(row.last_updated_at) ?? str(row.created_at, new Date().toISOString()),
+    callback_date: nullableStr(row.callback_date),
     referral_source: nullableStr(row.referral_source),
     referrer: nullableStr(row.referrer),
     notes: nullableStr(row.notes),
@@ -101,6 +103,12 @@ export function mergeLeadFromRealtime(
       row.current_owner_role !== undefined
         ? nullableStr(row.current_owner_role)
         : existing.current_owner_role,
+    last_updated_at:
+      row.last_updated_at !== undefined
+        ? nullableStr(row.last_updated_at) ?? existing.created_at
+        : existing.last_updated_at,
+    callback_date:
+      row.callback_date !== undefined ? nullableStr(row.callback_date) : existing.callback_date,
     created_at: row.created_at != null ? str(row.created_at, existing.created_at) : existing.created_at,
   };
 }

@@ -19,6 +19,11 @@ import {
 } from "../_lib/v2-customer-detail";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import { markLeadAssignmentRead } from "../_actions/assignment";
+import {
+  getV2AgingRowClass,
+  isLeadAgingStale,
+  sortV2AssigneeLeads,
+} from "@/lib/v2-task-aging";
 import { cn } from "@/lib/utils";
 
 const COLUMNS: {
@@ -59,6 +64,7 @@ interface Props {
   canChangeStatus: boolean;
   canWriteMemo: boolean;
   viewerRole: string;
+  canSendReminder?: boolean;
 }
 
 export default function V2InsideStaffBoard({
@@ -69,6 +75,7 @@ export default function V2InsideStaffBoard({
   canChangeStatus,
   canWriteMemo,
   viewerRole,
+  canSendReminder = false,
 }: Props) {
   const [detailTarget, setDetailTarget] = useState<V2CustomerDetailRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -89,12 +96,7 @@ export default function V2InsideStaffBoard({
     let list = leads;
     if (myTasksOnly && viewerUserId) {
       list = list.filter((l) => l.assigned_user_id === viewerUserId);
-      list = [...list].sort((a, b) => {
-        const aUnread = a.is_read === false ? 0 : 1;
-        const bUnread = b.is_read === false ? 0 : 1;
-        if (aUnread !== bUnread) return aUnread - bUnread;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
+      list = sortV2AssigneeLeads(list);
     }
     return list;
   }, [leads, myTasksOnly, viewerUserId]);
@@ -115,7 +117,14 @@ export default function V2InsideStaffBoard({
   const rowHighlightClass = (lead: LeadDetail) => {
     const patch = assignmentPatches[lead.id];
     const isRead = patch ? patch.isRead : lead.is_read !== false;
-    return myTasksOnly && !isRead ? "bg-amber-50 ring-1 ring-inset ring-amber-300" : "";
+
+    if (myTasksOnly && isLeadAgingStale(lead)) {
+      return getV2AgingRowClass(lead);
+    }
+    if (myTasksOnly && !isRead) {
+      return "bg-amber-50 ring-1 ring-inset ring-amber-300";
+    }
+    return "";
   };
 
   const openDetail = (lead: LeadDetail) => {
@@ -280,6 +289,7 @@ export default function V2InsideStaffBoard({
         <V2DetailActionPanel
           row={detailTarget}
           users={users}
+          canSendReminder={canSendReminder}
           onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
           onAssigned={(patch) => applyAssignment(detailTarget.id, patch)}
         />

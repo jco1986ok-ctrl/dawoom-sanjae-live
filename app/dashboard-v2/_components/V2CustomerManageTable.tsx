@@ -58,6 +58,7 @@ import { buildV2CustomerDetailRow, type V2CustomerDetailRow } from "../_lib/v2-c
 import type { CollaborationOwnerRole } from "@/lib/collaboration-workflow";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import { markLeadAssignmentRead } from "../_actions/assignment";
+import { getV2AgingRowClass, isLeadAgingStale } from "@/lib/v2-task-aging";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -75,6 +76,8 @@ interface Props {
   canWriteMemo?: boolean;
   /** 마스터(관리자) 접수 DB 삭제 */
   canDelete?: boolean;
+  /** 관리자 독촉 알림 */
+  canSendReminder?: boolean;
 }
 
 export default function V2CustomerManageTable({
@@ -88,6 +91,7 @@ export default function V2CustomerManageTable({
   canChangeStatus = true,
   canWriteMemo = true,
   canDelete = false,
+  canSendReminder = false,
 }: Props) {
   const showDocsMatrix = canViewDocumentsMatrix(viewerRole);
   const docsInteractive = showDocsMatrix;
@@ -127,7 +131,7 @@ export default function V2CustomerManageTable({
         const aUnread = a.isRead ? 1 : 0;
         const bUnread = b.isRead ? 1 : 0;
         if (aUnread !== bUnread) return aUnread - bUnread;
-        return b.submittedAt.localeCompare(a.submittedAt);
+        return new Date(a.lastUpdatedAt).getTime() - new Date(b.lastUpdatedAt).getTime();
       });
     }
     return list;
@@ -233,8 +237,26 @@ export default function V2CustomerManageTable({
     });
   };
 
-  const rowHighlightClass = (row: V2CustomerDetailRow) =>
-    myTasksOnly && !row.isRead ? "bg-amber-50 ring-1 ring-inset ring-amber-300" : "";
+  const rowHighlightClass = (row: V2CustomerDetailRow) => {
+    if (
+      myTasksOnly &&
+      isLeadAgingStale({
+        last_updated_at: row.lastUpdatedAt,
+        created_at: row.submittedAt,
+        consultation_status: row.consultationStatus,
+      })
+    ) {
+      return getV2AgingRowClass({
+        last_updated_at: row.lastUpdatedAt,
+        created_at: row.submittedAt,
+        consultation_status: row.consultationStatus,
+      });
+    }
+    if (myTasksOnly && !row.isRead) {
+      return "bg-amber-50 ring-1 ring-inset ring-amber-300";
+    }
+    return "";
+  };
 
   const closeDetail = () => {
     setDetailOpen(false);
@@ -798,6 +820,7 @@ export default function V2CustomerManageTable({
         <V2DetailActionPanel
           row={detailTarget}
           users={users}
+          canSendReminder={canSendReminder}
           onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
           onAssigned={(patch) => applyAssignment(detailTarget.id, patch)}
         />

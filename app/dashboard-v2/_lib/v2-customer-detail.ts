@@ -5,6 +5,7 @@ import {
   type CustomerDetailRow,
 } from "@/app/dashboard/_components/CustomerDetailModal";
 import { normalizeOwnerRole } from "@/lib/collaboration-workflow";
+import { getLeadLastUpdatedAt } from "@/lib/v2-task-aging";
 
 export type V2CustomerDetailRow = CustomerDetailRow & {
   currentOwnerRole: ReturnType<typeof normalizeOwnerRole>;
@@ -12,6 +13,8 @@ export type V2CustomerDetailRow = CustomerDetailRow & {
   assignedUserName: string | null;
   assignmentMemo: string | null;
   isRead: boolean;
+  lastUpdatedAt: string;
+  callbackDate: string | null;
 };
 
 export function buildV2CustomerDetailRow(
@@ -31,5 +34,7 @@ export function buildV2CustomerDetailRow(
     assignedUserName,
     assignmentMemo: lead.assignment_memo ?? null,
     isRead: lead.is_read !== false,
+    lastUpdatedAt: getLeadLastUpdatedAt(lead),
+    callbackDate: lead.callback_date ?? null,
   };
 }

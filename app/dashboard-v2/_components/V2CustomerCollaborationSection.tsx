@@ -18,6 +18,7 @@ interface Props {
   canChangeStatus: boolean;
   canWriteMemo: boolean;
   canDelete: boolean;
+  canSendReminder?: boolean;
 }
 
 export default function V2CustomerCollaborationSection({
@@ -31,6 +32,7 @@ export default function V2CustomerCollaborationSection({
   canChangeStatus,
   canWriteMemo,
   canDelete,
+  canSendReminder = false,
 }: Props) {
   const isInsideStaffView = currentUserRole === "일반팀원";
   const myTasksOnly = shouldUseV2MyTasksView(currentUserRole);
@@ -45,6 +47,7 @@ export default function V2CustomerCollaborationSection({
         canChangeStatus={canChangeStatus}
         canWriteMemo={canWriteMemo}
         viewerRole={viewerRole}
+        canSendReminder={canSendReminder}
       />
     );
   }
@@ -61,6 +64,7 @@ export default function V2CustomerCollaborationSection({
       canChangeStatus={canChangeStatus}
       canWriteMemo={canWriteMemo}
       canDelete={canDelete}
+      canSendReminder={canSendReminder}
     />
   );
 }

@@ -188,3 +188,95 @@ export async function markAllV2NotificationsRead(): Promise<{ success: boolean; 
   }
   return { success: true };
 }
+
+/** 관리자 독촉 — 담당 직원에게 in-app 알림 INSERT */
+export async function sendV2ReminderNotification(
+  leadId: string,
+  memo?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const auth = await requireV2Master();
+  if ("error" in auth) return { success: false, error: auth.error };
+
+  const admin = createAdminClient();
+  const { data: lead, error: leadError } = await admin
+    .from("leads")
+    .select("id, customer_name, assigned_user_id, consultation_status")
+    .eq("id", leadId)
+    .maybeSingle();
+
+  if (leadError || !lead) {
+    return { success: false, error: "접수 건을 찾을 수 없습니다." };
+  }
+
+  if (!lead.assigned_user_id) {
+    return { success: false, error: "담당자가 배정되지 않은 건입니다." };
+  }
+
+  const trimmedMemo = memo?.trim();
+  const baseMessage = `독촉: ${lead.customer_name} 건 처리를 확인해 주세요.`;
+  const message = trimmedMemo ? `${baseMessage} (${trimmedMemo})` : baseMessage;
+
+  const { error: notifyError } = await admin.from("notifications").insert({
+    user_id: lead.assigned_user_id,
+    lead_id: leadId,
+    kind: "reminder",
+    message,
+    from_user_id: auth.user.id,
+    target_owner_role: null,
+  });
+
+  if (notifyError) {
+    if (/notifications|does not exist/i.test(notifyError.message ?? "")) {
+      return {
+        success: false,
+        error: "notifications 테이블이 없습니다. supabase/24_collaboration_workflow.sql 을 실행해 주세요.",
+      };
+    }
+    return { success: false, error: notifyError.message };
+  }
+
+  revalidatePath("/dashboard-v2");
+  return { success: true };
+}
+
+/** V2 직책 테스트 — 시뮬레이션 대상 사용자 알림 조회 (마스터 전용) */
+export async function fetchV2NotificationsForUser(
+  targetUserId: string,
+): Promise<{
+  notifications: V2Notification[];
+  unreadCount: number;
+  error?: string;
+}> {
+  const auth = await requireV2Master();
+  if ("error" in auth) {
+    return { notifications: [], unreadCount: 0, error: auth.error };
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("notifications")
+    .select("id, lead_id, kind, message, target_owner_role, read_at, created_at")
+    .eq("user_id", targetUserId)
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (error) {
+    if (/notifications|does not exist/i.test(error.message ?? "")) {
+      return { notifications: [], unreadCount: 0 };
+    }
+    return { notifications: [], unreadCount: 0, error: error.message };
+  }
+
+  const notifications: V2Notification[] = (data ?? []).map((row) => ({
+    id: row.id as string,
+    leadId: (row.lead_id as string | null) ?? null,
+    kind: row.kind as string,
+    message: row.message as string,
+    targetOwnerRole: (row.target_owner_role as CollaborationOwnerRole | null) ?? null,
+    readAt: (row.read_at as string | null) ?? null,
+    createdAt: row.created_at as string,
+  }));
+
+  const unreadCount = notifications.filter((n) => !n.readAt).length;
+  return { notifications, unreadCount };
+}

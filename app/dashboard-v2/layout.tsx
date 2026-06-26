@@ -11,6 +11,7 @@ import InAppBrowserEscape from "@/components/pwa/InAppBrowserEscape";
 import { fetchRecentNotices } from "../dashboard/_actions/notices";
 import V2SandboxBanner from "./_components/V2SandboxBanner";
 import { pwaAssetUrl } from "@/lib/pwa-asset-version";
+import { Toaster } from "sonner";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -72,6 +73,7 @@ export default async function DashboardV2Layout({
       </main>
       <PwaInstallBanner userId={user.id} role={profile.role} />
       <InAppBrowserEscape />
+      <Toaster position="bottom-right" richColors closeButton />
     </div>
   );
 }
