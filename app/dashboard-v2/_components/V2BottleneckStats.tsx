@@ -5,6 +5,8 @@ import { Cell, Pie, PieChart } from "recharts";
 import type { V2BottleneckStat } from "@/lib/v2-overview-summary";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { v2SurfaceCard } from "../_lib/v2-ui";
+import { cn } from "@/lib/utils";
 
 const CHART_CONFIG = {
   inside_staff: { label: "내근", color: "hsl(199 89% 48%)" },
@@ -28,57 +30,60 @@ export default function V2BottleneckStats({ stats }: { stats: V2BottleneckStat[]
   }, [stats, total]);
 
   return (
-    <Card className="gap-0 py-0 shadow-sm border-slate-200/80 bg-white h-full">
-      <CardHeader className="px-4 pt-4 pb-2">
+    <Card className={cn(v2SurfaceCard(), "gap-0 py-0 h-full")}>
+      <CardHeader className="px-5 pt-5 pb-3">
         <CardTitle className="text-sm font-semibold text-slate-900">병목 현황</CardTitle>
         <CardDescription className="text-xs">역할별 진행 중 대기 건</CardDescription>
       </CardHeader>
 
-      <CardContent className="px-4 pb-4">
-        <div className="flex items-center gap-4">
-          <ChartContainer config={CHART_CONFIG} className="aspect-square h-[100px] w-[100px] shrink-0">
-            <PieChart>
-              <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-              <Pie
-                data={chartData}
-                dataKey="count"
-                nameKey="label"
-                innerRadius={30}
-                outerRadius={46}
-                strokeWidth={2}
-                stroke="hsl(var(--background))"
-              >
-                {chartData.map((entry) => (
-                  <Cell key={entry.role} fill={entry.fill} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ChartContainer>
+      <CardContent className="px-5 pb-5">
+        <div className="flex items-center gap-5 min-h-[148px]">
+          <div className="flex flex-1 items-center justify-center min-w-0">
+            <ChartContainer
+              config={CHART_CONFIG}
+              className="mx-auto aspect-square h-[132px] w-[132px]"
+            >
+              <PieChart>
+                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                <Pie
+                  data={chartData}
+                  dataKey="count"
+                  nameKey="label"
+                  innerRadius={40}
+                  outerRadius={62}
+                  strokeWidth={2}
+                  stroke="#ffffff"
+                >
+                  {chartData.map((entry) => (
+                    <Cell key={entry.role} fill={entry.fill} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+          </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1 mb-3">
-              {stats.map((stat, index) => (
-                <div key={stat.role} className="flex items-center flex-1 min-w-0">
-                  <div className="flex flex-col items-center flex-1 min-w-0">
-                    <span
-                      className="size-2 rounded-full shrink-0 mb-1"
-                      style={{ backgroundColor: CHART_CONFIG[stat.role].color }}
-                    />
-                    <span className="text-[10px] text-slate-500 truncate w-full text-center">
-                      {stat.label}
-                    </span>
-                    <span className="text-lg font-bold tabular-nums text-slate-900 leading-tight">
-                      {stat.count}
-                    </span>
-                  </div>
-                  {index < stats.length - 1 && (
-                    <div className="h-px flex-1 bg-slate-200 mx-1 mt-[-14px]" aria-hidden />
-                  )}
+          <div className="flex flex-col gap-2.5 w-[108px] shrink-0">
+            {stats.map((stat) => (
+              <div
+                key={stat.role}
+                className="flex items-center justify-between gap-2 rounded-lg bg-slate-50/80 px-2.5 py-2"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="size-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: CHART_CONFIG[stat.role].color }}
+                  />
+                  <span className="text-xs font-medium text-slate-600 truncate">
+                    {CHART_CONFIG[stat.role].label}
+                  </span>
                 </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-slate-400">
-              전체 진행 {total}건 · 완료 건 제외
+                <span className="text-base font-bold tabular-nums text-slate-900 leading-none">
+                  {stat.count}
+                </span>
+              </div>
+            ))}
+            <p className="text-[10px] text-slate-400 text-right pt-0.5">
+              합계 {total}건
             </p>
           </div>
         </div>

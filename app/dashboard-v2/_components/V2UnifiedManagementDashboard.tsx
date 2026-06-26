@@ -28,6 +28,8 @@ import { PartnerNetworkSections } from "@/app/dashboard/_components/PartnerNetwo
 import AdminPdfCalibrateButton from "@/app/dashboard/admin/_components/AdminPdfCalibrateButton";
 import V2OverviewPanel from "./V2OverviewPanel";
 import V2CustomerCollaborationSection from "./V2CustomerCollaborationSection";
+import { V2_PAGE_BG, v2SurfaceCard } from "../_lib/v2-ui";
+import { cn } from "@/lib/utils";
 
 type TabId = "overview" | "customers" | "partners";
 
@@ -112,7 +114,7 @@ export default function V2UnifiedManagementDashboard({
   }, [enrichedUsers, simulation.effectiveViewerId, adminAgentId]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className={cn("min-h-screen", V2_PAGE_BG)}>
       <div className="bg-[#0f2d5e] pt-8 pb-10">
         <div className="w-full">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -170,7 +172,7 @@ export default function V2UnifiedManagementDashboard({
           </div>
         )}
 
-        <div className="relative z-10 bg-white rounded-2xl shadow-md border border-slate-200/80 p-2 flex gap-2 overflow-x-auto">
+        <div className={cn(v2SurfaceCard(), "p-1.5 flex gap-1.5 overflow-x-auto")}>
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -201,8 +203,8 @@ export default function V2UnifiedManagementDashboard({
         )}
 
         {activeTab === "customers" && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden min-w-0">
-            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-100">
+          <div className={cn(v2SurfaceCard(), "overflow-hidden min-w-0")}>
+            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
               <div className="w-8 h-8 rounded-lg bg-cyan-50 border border-cyan-100 flex items-center justify-center">
                 <FileText className="w-4 h-4 text-cyan-700" />
               </div>

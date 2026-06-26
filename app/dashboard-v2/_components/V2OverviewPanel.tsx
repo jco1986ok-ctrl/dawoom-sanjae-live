@@ -20,6 +20,7 @@ import V2OverviewTabPanels from "./V2OverviewTabPanels";
 import V2SummaryCards from "./V2SummaryCards";
 import V2BottleneckStats from "./V2BottleneckStats";
 import V2OverviewActionBar from "./V2OverviewActionBar";
+import { v2SurfaceCard } from "../_lib/v2-ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -37,13 +38,15 @@ function IntakeRow({ lead }: { lead: LeadDetail }) {
   const date = new Date(lead.created_at).toLocaleDateString("ko-KR");
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 last:border-0 min-w-0 hover:bg-slate-50/80 transition-colors">
-      <div className="min-w-0 flex-1">
-        <p className="font-medium text-slate-900 text-sm truncate">{lead.customer_name}</p>
-        <p className="text-[11px] text-slate-500 truncate">{disease}</p>
-      </div>
-      <p className="text-[11px] text-slate-400 tabular-nums shrink-0 hidden sm:block">{date}</p>
-      <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 whitespace-nowrap shrink-0">
+    <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 last:border-0 min-w-0 hover:bg-slate-50/60 transition-colors">
+      <p className="font-medium text-slate-900 text-sm truncate shrink-0 max-w-[28%] sm:max-w-[22%]">
+        {lead.customer_name}
+      </p>
+      <p className="text-[11px] text-slate-500 truncate whitespace-nowrap overflow-hidden min-w-0 flex-1">
+        {disease}
+      </p>
+      <p className="text-[11px] text-slate-400 tabular-nums shrink-0 hidden md:block">{date}</p>
+      <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 whitespace-nowrap shrink-0 max-w-[30%] truncate">
         {lead.consultation_status}
       </span>
     </div>
@@ -55,8 +58,8 @@ function FullHistorySection({ leads }: { leads: LeadDetail[] }) {
   const sorted = useMemo(() => sortLeadsByRecency(leads), [leads]);
 
   return (
-    <Card className="gap-0 py-0 shadow-sm border-slate-200/80 bg-white">
-      <CardHeader className="px-4 pt-4 pb-3 flex flex-row items-center justify-between gap-3 border-b border-slate-100">
+    <Card className={cn(v2SurfaceCard(), "gap-0 py-0")}>
+      <CardHeader className="px-5 pt-5 pb-3 flex flex-row items-center justify-between gap-3 border-b border-gray-100">
         <div>
           <CardTitle className="text-sm font-semibold">상세 고객 이력</CardTitle>
           <CardDescription className="text-xs">전체 {sorted.length}건</CardDescription>
@@ -145,7 +148,7 @@ export default function V2OverviewPanel({
   return (
     <div className="grid gap-4">
       {/* 상단 툴바 — 액션 버튼 그룹 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-2.5 shadow-sm border border-gray-100">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900">종합 요약</p>
           <p className="text-[11px] text-slate-500">퍼널 · 병목 · 최근 접수 한눈에</p>
@@ -162,8 +165,8 @@ export default function V2OverviewPanel({
           <V2BottleneckStats stats={bottleneckStats} />
         </div>
 
-        <Card className="lg:col-span-8 gap-0 py-0 shadow-sm border-slate-200/80 bg-white h-full">
-          <CardHeader className="px-4 pt-4 pb-2 flex flex-row items-center justify-between">
+        <Card className={cn(v2SurfaceCard(), "lg:col-span-8 gap-0 py-0 h-full")}>
+          <CardHeader className="px-5 pt-5 pb-2 flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-sm font-semibold">최근 접수</CardTitle>
               <CardDescription className="text-xs">최대 5건</CardDescription>
@@ -182,7 +185,7 @@ export default function V2OverviewPanel({
       {/* 상세 탭 */}
       <section aria-label="종합 요약 상세 탭" className="grid gap-4">
         <div
-          className="bg-white rounded-lg border border-slate-200/80 shadow-sm p-1 flex gap-1 overflow-x-auto"
+          className={cn(v2SurfaceCard(), "p-1 flex gap-1 overflow-x-auto")}
           role="tablist"
         >
           {V2_OVERVIEW_TAB_IDS.map((tabId) => (

@@ -1,6 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 import type { V2MainSummaryCardSummary } from "@/lib/v2-overview-summary";
 import { Card, CardContent } from "@/components/ui/card";
+import { v2SurfaceCard } from "../_lib/v2-ui";
 import { cn } from "@/lib/utils";
 
 export default function V2SummaryCards({ cards }: { cards: V2MainSummaryCardSummary[] }) {
@@ -13,8 +14,9 @@ export default function V2SummaryCards({ cards }: { cards: V2MainSummaryCardSumm
           <Card
             key={card.id}
             className={cn(
-              "gap-0 py-0 shadow-sm border-slate-200/80",
-              isDelay ? "bg-red-50/90 border-red-200/80" : "bg-white",
+              v2SurfaceCard(),
+              "gap-0 py-0",
+              isDelay && "bg-red-50/80 border-red-100",
             )}
           >
             <CardContent className="px-4 py-4 flex flex-col min-h-[108px]">
@@ -30,7 +32,7 @@ export default function V2SummaryCards({ cards }: { cards: V2MainSummaryCardSumm
                   </p>
                   <p
                     className={cn(
-                      "text-[10px] mt-0.5 truncate",
+                      "text-[10px] mt-0.5 truncate whitespace-nowrap",
                       isDelay ? "text-red-500/80" : "text-slate-400",
                     )}
                   >

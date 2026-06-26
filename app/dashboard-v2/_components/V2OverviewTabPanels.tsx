@@ -27,6 +27,8 @@ import { formatKrw } from "@/lib/lead-fee";
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import { parseConsultTimeline } from "@/lib/lead-consult-memos";
 import type { V2OverviewTabId } from "@/lib/v2-overview-tabs";
+import { v2SurfaceCard } from "../_lib/v2-ui";
+import { cn } from "@/lib/utils";
 
 interface Props {
   tab: V2OverviewTabId;
@@ -48,10 +50,8 @@ function CockpitCard({
   className?: string;
 }) {
   return (
-    <div
-      className={`bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden min-w-0 ${className}`}
-    >
-      <div className="flex items-start gap-3 px-5 py-4 border-b border-slate-50">
+    <div className={cn(v2SurfaceCard(), "overflow-hidden min-w-0", className)}>
+      <div className="flex items-start gap-3 px-5 py-4 border-b border-gray-100">
         <div className="w-9 h-9 rounded-xl bg-[#0f2d5e]/5 border border-[#0f2d5e]/10 flex items-center justify-center shrink-0 text-[#0f2d5e]">
           {icon}
         </div>

@@ -61,7 +61,7 @@ export default async function DashboardV2Layout({
   const notices = await fetchRecentNotices(2);
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col pb-[calc(7rem+env(safe-area-inset-bottom,0px))] sm:pb-28">
+    <div className="min-h-screen bg-slate-50 flex flex-col pb-[calc(7rem+env(safe-area-inset-bottom,0px))] sm:pb-28">
       <V2DashboardNav user={profile as AppUser} />
       <main className="flex-1 w-full">
         <div className={`${DASHBOARD_SHELL_X} pt-4 flex flex-col gap-3`}>
