@@ -3,7 +3,7 @@
 import type { DashboardTestRole } from "@/lib/dashboard-rbac";
 import { shouldShowV2PartnerLinkHero } from "@/lib/v2-overview-audience";
 import V2PartnerSalesLinkHero from "./V2PartnerSalesLinkHero";
-import V2InternalOverviewBrief from "./V2InternalOverviewBrief";
+import V2StaffLinkBar from "./V2StaffLinkBar";
 
 interface Props {
   agentId: string;
@@ -12,7 +12,7 @@ interface Props {
   staleCount?: number;
 }
 
-/** 직책별 종합 요약 상단 — 영업 파트너: 링크 히어로 / 내근: 업무 안내 */
+/** 직책별 종합 요약 상단 — 모든 직책 링크 제공, 영업 파트너는 대형 히어로 */
 export default function V2OverviewLinkSection({
   agentId,
   role,
@@ -24,8 +24,8 @@ export default function V2OverviewLinkSection({
   }
 
   return (
-    <V2InternalOverviewBrief
-      role={role}
+    <V2StaffLinkBar
+      agentId={agentId}
       urgentCount={urgentCount}
       staleCount={staleCount}
     />
