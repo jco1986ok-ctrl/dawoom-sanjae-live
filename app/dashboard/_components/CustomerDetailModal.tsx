@@ -75,7 +75,6 @@ export interface CustomerDetailRow {
   inflow?: InflowInfo | null;
   referralSource?: string | null;
   referrer?: string | null;
-  currentOwnerRole?: import("@/lib/collaboration-workflow").CollaborationOwnerRole;
 }
 
 function formatTimelineDate(iso: string): string {
@@ -109,8 +108,6 @@ interface Props {
   ) => void;
   onOtherDocsUpdated?: (leadId: string, otherDocs: OtherDocEntry[]) => void;
   onDiseaseCategoryUpdated?: (leadId: string, category: DiseaseCategory | null) => void;
-  /** V2 협업 바통 터치 영역 (V2에서만 전달) */
-  collaborationBar?: React.ReactNode;
 }
 
 export function CustomerDetailModal({
@@ -127,7 +124,6 @@ export function CustomerDetailModal({
   onDocsUpdated,
   onOtherDocsUpdated,
   onDiseaseCategoryUpdated,
-  collaborationBar,
 }: Props) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
@@ -259,12 +255,6 @@ export function CustomerDetailModal({
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {collaborationBar && (
-          <div className="shrink-0 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
-            {collaborationBar}
-          </div>
-        )}
 
         {readOnly && (
           <div className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 border-b border-slate-100 text-xs text-slate-600 shrink-0">
@@ -829,9 +819,6 @@ export function buildCustomerDetailRow(lead: import("./LeadDetailPanel").LeadDet
     inflow: lead.inflow ?? null,
     referralSource: lead.referral_source ?? null,
     referrer: lead.referrer ?? null,
-    currentOwnerRole: lead.current_owner_role
-      ? (lead.current_owner_role as import("@/lib/collaboration-workflow").CollaborationOwnerRole)
-      : undefined,
   };
 }
 

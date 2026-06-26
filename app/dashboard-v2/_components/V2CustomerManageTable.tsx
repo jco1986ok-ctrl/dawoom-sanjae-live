@@ -12,16 +12,15 @@ import {
   Trash2,
 } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
-import { LeadStatusSelect } from "./LeadStatusSelect";
-import LeadStatusBadge from "./LeadStatusBadge";
+import { LeadStatusSelect } from "@/app/dashboard/_components/LeadStatusSelect";
+import LeadStatusBadge from "@/app/dashboard/_components/LeadStatusBadge";
 import {
   CustomerDetailModal,
   applyDocsPatchToDetailRow,
   applyOtherDocsPatchToDetailRow,
-  buildCustomerDetailRow,
   notesToComments,
   type CustomerDetailRow,
-} from "./CustomerDetailModal";
+} from "@/app/dashboard/_components/CustomerDetailModal";
 import {
   CUSTOMER_QUICK_FILTERS,
   CUSTOMER_TABLE_PAGE_SIZE,
@@ -33,7 +32,7 @@ import {
   matchesDiseaseCategoryFilter,
   type DiseaseCategoryFilterId,
 } from "@/lib/disease-category";
-import DiseaseCategoryBadge from "./DiseaseCategoryBadge";
+import DiseaseCategoryBadge from "@/app/dashboard/_components/DiseaseCategoryBadge";
 import {
   DesktopTableWrap,
   FluidDataRow,
@@ -47,14 +46,17 @@ import {
   MOBILE_CARD_HEADER_CLASS,
   MOBILE_CARD_INFO_BOX_CLASS,
   MOBILE_CARD_TITLE_CLASS,
-} from "./dashboard-list-layout";
+} from "@/app/dashboard/_components/dashboard-list-layout";
 import { useDashboardLeads } from "@/hooks/use-dashboard-leads";
-import DocumentsMatrixBadges from "./DocumentsMatrixBadges";
+import DocumentsMatrixBadges from "@/app/dashboard/_components/DocumentsMatrixBadges";
 import { canViewDocumentsMatrix, canDownloadContractPdf } from "@/lib/lead-docs-status";
-import { PartnerConfirmBadge } from "./PartnerConfirmBadge";
-import { BulkDocumentsDownloadButton } from "./BulkDocumentsDownloadButton";
-import { DocCollectionProgressBadge, DocumentsWithProgress } from "./DocCollectionProgressBadge";
-import { deleteLead } from "../_actions/leads";
+import { PartnerConfirmBadge } from "@/app/dashboard/_components/PartnerConfirmBadge";
+import { BulkDocumentsDownloadButton } from "@/app/dashboard/_components/BulkDocumentsDownloadButton";
+import { DocCollectionProgressBadge, DocumentsWithProgress } from "@/app/dashboard/_components/DocCollectionProgressBadge";
+import { deleteLead } from "@/app/dashboard/_actions/leads";
+import V2FloatingHandoffPanel from "./V2FloatingHandoffPanel";
+import { buildV2CustomerDetailRow, type V2CustomerDetailRow } from "../_lib/v2-customer-detail";
+import type { CollaborationOwnerRole } from "@/lib/collaboration-workflow";
 
 interface Props {
   leads?: LeadDetail[];
@@ -70,7 +72,7 @@ interface Props {
   canDelete?: boolean;
 }
 
-export default function AttorneyCustomerManageTable({
+export default function V2CustomerManageTable({
   leads: initialLeads = [],
   assignedTo,
   clientRefetch = true,
@@ -89,10 +91,10 @@ export default function AttorneyCustomerManageTable({
     clientRefetch,
   });
 
-  const [rows, setRows] = useState<CustomerDetailRow[]>(() =>
-    initialLeads.map(buildCustomerDetailRow),
+  const [rows, setRows] = useState<V2CustomerDetailRow[]>(() =>
+    initialLeads.map(buildV2CustomerDetailRow),
   );
-  const [detailTarget, setDetailTarget] = useState<CustomerDetailRow | null>(null);
+  const [detailTarget, setDetailTarget] = useState<V2CustomerDetailRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [quickFilter, setQuickFilter] = useState<CustomerQuickFilterId>("all");
   const [diseaseFilter, setDiseaseFilter] = useState<DiseaseCategoryFilterId>("all");
@@ -100,13 +102,13 @@ export default function AttorneyCustomerManageTable({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    setRows(customers.map(buildCustomerDetailRow));
+    setRows(customers.map(buildV2CustomerDetailRow));
   }, [customers]);
 
   useEffect(() => {
     if (!detailOpen || !detailTarget) return;
     const fresh = customers.find((c) => c.id === detailTarget.id);
-    if (fresh) setDetailTarget(buildCustomerDetailRow(fresh));
+    if (fresh) setDetailTarget(buildV2CustomerDetailRow(fresh));
   }, [customers, detailOpen, detailTarget?.id]);
 
   const filteredRows = useMemo(
@@ -170,6 +172,15 @@ export default function AttorneyCustomerManageTable({
     const latest = rows.find((r) => r.id === row.id) ?? row;
     setDetailTarget(latest);
     setDetailOpen(true);
+  };
+
+  const applyOwnerRole = (leadId: string, role: CollaborationOwnerRole) => {
+    setRows((prev) =>
+      prev.map((r) => (r.id === leadId ? { ...r, currentOwnerRole: role } : r)),
+    );
+    setDetailTarget((prev) =>
+      prev?.id === leadId ? { ...prev, currentOwnerRole: role } : prev,
+    );
   };
 
   const closeDetail = () => {
@@ -699,6 +710,13 @@ export default function AttorneyCustomerManageTable({
           syncRowData(id, { diseaseCategory: category });
         }}
       />
+
+      {detailOpen && detailTarget && (
+        <V2FloatingHandoffPanel
+          row={detailTarget}
+          onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
+        />
+      )}
     </>
   );
 }

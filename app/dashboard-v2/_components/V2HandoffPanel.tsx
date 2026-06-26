@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { ArrowRight, Loader2, UserCheck } from "lucide-react";
-import type { CustomerDetailRow } from "@/app/dashboard/_components/CustomerDetailModal";
+import type { V2CustomerDetailRow } from "../_lib/v2-customer-detail";
 import {
   COLLABORATION_OWNER_BADGE_CLASS,
   COLLABORATION_OWNER_LABELS,
@@ -14,7 +14,7 @@ import { handoffLeadOwner } from "../_actions/collaboration";
 import { notifyV2NotificationsRefresh } from "./V2NotificationBell";
 
 interface Props {
-  row: CustomerDetailRow;
+  row: V2CustomerDetailRow;
   onOwnerRoleUpdated: (role: CollaborationOwnerRole) => void;
 }
 

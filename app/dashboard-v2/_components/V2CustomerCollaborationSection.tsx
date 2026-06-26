@@ -2,8 +2,7 @@
 
 import type { LeadDetail } from "@/lib/lead-detail";
 import type { DashboardTestRole } from "@/lib/dashboard-rbac";
-import AttorneyCustomerManageTable from "@/app/dashboard/_components/AttorneyCustomerManageTable";
-import V2HandoffPanel from "./V2HandoffPanel";
+import V2CustomerManageTable from "./V2CustomerManageTable";
 import V2InsideStaffBoard from "./V2InsideStaffBoard";
 
 interface Props {
@@ -41,7 +40,7 @@ export default function V2CustomerCollaborationSection({
   }
 
   return (
-    <AttorneyCustomerManageTable
+    <V2CustomerManageTable
       leads={leads}
       assignedTo={assignedTo}
       clientRefetch={clientRefetch}
@@ -49,9 +48,6 @@ export default function V2CustomerCollaborationSection({
       canChangeStatus={canChangeStatus}
       canWriteMemo={canWriteMemo}
       canDelete={canDelete}
-      renderCollaborationBar={(row, { onOwnerRoleUpdated }) => (
-        <V2HandoffPanel row={row} onOwnerRoleUpdated={onOwnerRoleUpdated} />
-      )}
     />
   );
 }

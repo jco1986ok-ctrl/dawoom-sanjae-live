@@ -11,12 +11,12 @@ import {
 } from "@/lib/collaboration-workflow";
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import LeadStatusBadge from "@/app/dashboard/_components/LeadStatusBadge";
-import V2HandoffPanel from "./V2HandoffPanel";
+import { CustomerDetailModal } from "@/app/dashboard/_components/CustomerDetailModal";
+import V2FloatingHandoffPanel from "./V2FloatingHandoffPanel";
 import {
-  CustomerDetailModal,
-  buildCustomerDetailRow,
-  type CustomerDetailRow,
-} from "@/app/dashboard/_components/CustomerDetailModal";
+  buildV2CustomerDetailRow,
+  type V2CustomerDetailRow,
+} from "../_lib/v2-customer-detail";
 
 const COLUMNS: {
   role: CollaborationOwnerRole;
@@ -61,7 +61,7 @@ export default function V2InsideStaffBoard({
   canWriteMemo,
   viewerRole,
 }: Props) {
-  const [detailTarget, setDetailTarget] = useState<CustomerDetailRow | null>(null);
+  const [detailTarget, setDetailTarget] = useState<V2CustomerDetailRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [localRows, setLocalRows] = useState<Record<string, CollaborationOwnerRole>>({});
 
@@ -79,7 +79,7 @@ export default function V2InsideStaffBoard({
   }, [leads, localRows]);
 
   const openDetail = (lead: LeadDetail) => {
-    setDetailTarget(buildCustomerDetailRow(lead));
+    setDetailTarget(buildV2CustomerDetailRow(lead));
     setDetailOpen(true);
   };
 
@@ -160,15 +160,14 @@ export default function V2InsideStaffBoard({
         viewerRole={viewerRole}
         onNotesUpdated={() => {}}
         onStatusUpdated={() => {}}
-        collaborationBar={
-          detailTarget ? (
-            <V2HandoffPanel
-              row={detailTarget}
-              onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
-            />
-          ) : undefined
-        }
       />
+
+      {detailOpen && detailTarget && (
+        <V2FloatingHandoffPanel
+          row={detailTarget}
+          onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
+        />
+      )}
     </>
   );
 }
