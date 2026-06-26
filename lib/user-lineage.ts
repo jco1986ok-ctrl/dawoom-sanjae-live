@@ -1,3 +1,4 @@
+import { normalizeMasterDisplayName } from "@/lib/master-display";
 import type { UserRole } from "@/lib/types";
 
 export interface UserLineageNode {
@@ -52,11 +53,16 @@ export function enrichUsersWithLineage(
 
   return users.map((u) => {
     const parent = u.parent_agent_id ? userMap[u.parent_agent_id] : null;
+    const displayName = normalizeMasterDisplayName(u.name, u.role);
     return {
       ...u,
-      parent_name: parent?.name ?? null,
+      name: displayName,
+      parent_name: parent ? normalizeMasterDisplayName(parent.name, parent.role) : null,
       parent_role: parent?.role ?? null,
-      lineage: buildUserLineage(u.id, userMap),
+      lineage: buildUserLineage(u.id, userMap).map((n) => ({
+        ...n,
+        name: normalizeMasterDisplayName(n.name, n.role),
+      })),
     };
   });
 }

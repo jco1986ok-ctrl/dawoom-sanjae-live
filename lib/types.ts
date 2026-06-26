@@ -6,13 +6,15 @@ export type UserRole =
   | "노무사"
   | "대표노무사";
 
+import type { LeadStatusOption } from "@/lib/lead-status";
+
 export type LeadStatus =
-  | "신규"
+  | LeadStatusOption
   | "연락대기"
-  | "상담중"
-  | "계약완료"
-  | "보류"
   | "종결";
+
+/** 코드 상수 PENDING → DB·UI 표시값 '보류' */
+export { LEAD_STATUS_CODE, LEAD_STATUS_PENDING } from "@/lib/lead-status";
 
 export interface AppUser {
   id: string;
@@ -31,11 +33,18 @@ export interface Lead {
   customer_name: string;
   phone: string;
   disease_name: string;
+  disease_category?: string | null;
+  fee_amount?: number | null;
   consultation_status: LeadStatus;
   referral_source: string | null;
+  referrer: string | null;
   referred_by_user_id: string | null; // 실제 접수 영업자 (총판 or 하위)
   master_agent_id: string | null;     // 총판영업자 id
   notes: string | null;
+  pdf_url?: string | null;
+  has_weim?: boolean | null;
+  docs_status?: import("@/lib/lead-docs-status").LeadDocsStatus | null;
+  other_docs?: unknown;
   created_at: string;
   updated_at: string;
   /** 조인 시 포함 */

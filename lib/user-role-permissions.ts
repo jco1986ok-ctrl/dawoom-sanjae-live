@@ -54,3 +54,29 @@ export function getAssignableRoles(viewerRole: UserRole): UserRole[] {
   if (viewerRole === "총괄공식파트너") return HEAD_PARTNER_ASSIGNABLE_ROLES;
   return [];
 }
+
+/** 관리자·총괄 파트너: 파트너·노무사 계정 삭제 (본인·관리자·타 총괄 제외, 총괄은 산하 네트워크만) */
+export function canDeleteUser(
+  target: AdminUserListItem,
+  viewerRole: UserRole,
+  viewerId: string,
+): boolean {
+  if (target.id === viewerId) return false;
+  if (target.role === "관리자") return false;
+
+  if (viewerRole === "관리자") return true;
+
+  if (viewerRole === "총괄공식파트너") {
+    if (
+      target.role === "총괄공식파트너" ||
+      target.role === "대표노무사" ||
+      target.role === "노무사" ||
+      target.role === "관리자"
+    ) {
+      return false;
+    }
+    return isInHeadPartnerNetwork(target, viewerId);
+  }
+
+  return false;
+}
