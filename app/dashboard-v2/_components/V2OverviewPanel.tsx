@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
 import type { AdminUserListItem } from "@/lib/user-lineage";
+import type { DashboardTestRole } from "@/lib/dashboard-rbac";
+import { getV2OverviewHeaderCopy } from "@/lib/v2-overview-audience";
+import { isLeadAgingStale } from "@/lib/v2-task-aging";
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import {
   sortLeadsByRecency,
@@ -18,7 +21,7 @@ import { useV2OverviewHashTab } from "./use-v2-overview-hash-tab";
 import V2OverviewTabPanels from "./V2OverviewTabPanels";
 import V2SummaryCards from "./V2SummaryCards";
 import V2WorkQueueStats from "./V2WorkQueueStats";
-import V2OverviewActionBar from "./V2OverviewActionBar";
+import V2OverviewLinkSection from "./V2OverviewLinkSection";
 import { v2SurfaceCard } from "../_lib/v2-ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -29,6 +32,7 @@ interface Props {
   users: AdminUserListItem[];
   statusCount: Record<string, number>;
   intakeAgentId: string;
+  currentUserRole: DashboardTestRole;
 }
 
 function IntakeRow({ lead }: { lead: LeadDetail }) {
@@ -130,7 +134,9 @@ export default function V2OverviewPanel({
   users,
   statusCount,
   intakeAgentId,
+  currentUserRole,
 }: Props) {
+  const headerCopy = getV2OverviewHeaderCopy(currentUserRole);
   const { activeTab, setHashTab } = useV2OverviewHashTab();
   const summaryCards = useMemo(
     () => computeV2MainSummaryCards(statusCount),
@@ -142,16 +148,29 @@ export default function V2OverviewPanel({
   );
   const spotlightLeads = useMemo(() => sortLeadsByRecency(displayLeads).slice(0, 5), [displayLeads]);
 
+  const urgentCount = useMemo(
+    () => (statusCount["신규"] ?? 0) + (statusCount["부재중"] ?? 0) + (statusCount["연락대기"] ?? 0),
+    [statusCount],
+  );
+  const staleCount = useMemo(
+    () => displayLeads.filter((lead) => isLeadAgingStale(lead)).length,
+    [displayLeads],
+  );
+
   return (
     <div className="grid gap-4">
       {/* 섹션 타이틀 */}
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-slate-900">종합 요약</p>
-        <p className="text-[11px] text-slate-500">퍼널 · 업무 대기 · 최근 접수 한눈에</p>
+        <p className="text-sm font-semibold text-slate-900">{headerCopy.title}</p>
+        <p className="text-[11px] text-slate-500">{headerCopy.subtitle}</p>
       </div>
 
-      {/* 링크 공유 액션 바 — KPI 카드 바로 위 */}
-      <V2OverviewActionBar agentId={intakeAgentId} />
+      <V2OverviewLinkSection
+        agentId={intakeAgentId}
+        role={currentUserRole}
+        urgentCount={urgentCount}
+        staleCount={staleCount}
+      />
 
       {/* KPI 카드 */}
       <V2SummaryCards cards={summaryCards} />
