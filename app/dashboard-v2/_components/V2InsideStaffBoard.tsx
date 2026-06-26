@@ -10,7 +10,7 @@ import {
   type CollaborationOwnerRole,
 } from "@/lib/collaboration-workflow";
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
-import LeadStatusBadge from "@/app/dashboard/_components/LeadStatusBadge";
+import V2LeadStatusBadge from "./V2LeadStatusBadge";
 import { CustomerDetailModal, notesToComments } from "@/app/dashboard/_components/CustomerDetailModal";
 import { V2LeadStatusSelect } from "./V2LeadStatusSelect";
 import V2DetailActionPanel from "./V2DetailActionPanel";
@@ -291,7 +291,7 @@ export default function V2InsideStaffBoard({
                           {formatLeadDiseaseDisplay(lead.notes, lead.disease_name)}
                         </p>
                         <div className="mt-2">
-                          <LeadStatusBadge status={getLeadStatus(lead)} />
+                          <V2LeadStatusBadge status={getLeadStatus(lead)} />
                         </div>
                       </button>
                     </li>
@@ -311,6 +311,7 @@ export default function V2InsideStaffBoard({
         canWriteMemo={canWriteMemo}
         viewerRole={viewerRole}
         StatusSelectComponent={V2LeadStatusSelect}
+        StatusBadgeComponent={V2LeadStatusBadge}
         onNotesUpdated={applyNotesUpdate}
         onStatusUpdated={applyStatusUpdate}
       />

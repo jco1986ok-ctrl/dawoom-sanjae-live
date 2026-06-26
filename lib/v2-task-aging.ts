@@ -2,11 +2,7 @@ import type { LeadDetail } from "@/lib/lead-detail";
 
 export const V2_AGING_STALE_DAYS = 7;
 
-const TERMINAL_STATUSES = new Set([
-  "산재승인(완료)",
-  "종결(수임불가)",
-  "종결",
-]);
+const TERMINAL_STATUSES = new Set<string>([]);
 
 export function getLeadLastUpdatedAt(lead: Pick<LeadDetail, "last_updated_at" | "created_at">): string {
   return lead.last_updated_at ?? lead.created_at;

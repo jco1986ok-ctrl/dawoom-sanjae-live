@@ -5,6 +5,7 @@ import {
   type CustomerDetailRow,
 } from "@/app/dashboard/_components/CustomerDetailModal";
 import { normalizeOwnerRole } from "@/lib/collaboration-workflow";
+import { normalizeV2LeadStatus } from "@/lib/v2-lead-status";
 import { getLeadLastUpdatedAt } from "@/lib/v2-task-aging";
 
 export type V2CustomerDetailRow = CustomerDetailRow & {
@@ -29,6 +30,7 @@ export function buildV2CustomerDetailRow(
 
   return {
     ...buildCustomerDetailRow(lead),
+    consultationStatus: normalizeV2LeadStatus(lead.consultation_status),
     currentOwnerRole: normalizeOwnerRole(lead.current_owner_role),
     assignedUserId,
     assignedUserName,

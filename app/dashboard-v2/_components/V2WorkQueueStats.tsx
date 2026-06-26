@@ -80,17 +80,17 @@ export default function V2WorkQueueStats({ stats }: { stats: V2WorkQueueStageSta
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 w-[136px] shrink-0">
+          <div className="flex flex-col gap-2 w-[148px] shrink-0">
             {stats.map((stat) => (
               <div
                 key={stat.stage}
-                className="flex items-center gap-2 rounded-lg bg-slate-50/80 px-2.5 py-2"
+                className="flex items-start gap-2 rounded-lg bg-slate-50/80 px-2.5 py-2"
               >
                 <span
-                  className="size-2.5 rounded-full shrink-0"
+                  className="size-2.5 rounded-full shrink-0 mt-1"
                   style={{ backgroundColor: stat.color }}
                 />
-                <span className="text-[10px] font-medium text-slate-600 leading-snug flex-1 min-w-0">
+                <span className="text-[9px] font-medium text-slate-600 leading-snug flex-1 min-w-0">
                   {stat.label}
                 </span>
                 <span className="text-base font-bold tabular-nums text-slate-900 leading-none shrink-0">

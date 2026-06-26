@@ -6,6 +6,7 @@ import type { LeadDetail } from "@/lib/lead-detail";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import type { DashboardTestRole } from "@/lib/dashboard-rbac";
 import { getV2OverviewHeaderCopy } from "@/lib/v2-overview-audience";
+import { getV2LeadStatusLabel } from "@/lib/v2-lead-status";
 import { isLeadAgingStale } from "@/lib/v2-task-aging";
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import {
@@ -49,7 +50,7 @@ function IntakeRow({ lead }: { lead: LeadDetail }) {
       </p>
       <p className="text-[11px] text-slate-400 tabular-nums shrink-0 hidden md:block">{date}</p>
       <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 whitespace-nowrap shrink-0 max-w-[30%] truncate">
-        {lead.consultation_status}
+        {getV2LeadStatusLabel(lead.consultation_status)}
       </span>
     </div>
   );
@@ -112,7 +113,7 @@ function FullHistorySection({ leads }: { leads: LeadDetail[] }) {
                   </td>
                   <td className="px-4 py-2.5">
                     <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
-                      {lead.consultation_status}
+                      {getV2LeadStatusLabel(lead.consultation_status)}
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-slate-500 text-xs truncate max-w-[120px]">
@@ -149,7 +150,7 @@ export default function V2OverviewPanel({
   const spotlightLeads = useMemo(() => sortLeadsByRecency(displayLeads).slice(0, 5), [displayLeads]);
 
   const urgentCount = useMemo(
-    () => (statusCount["신규"] ?? 0) + (statusCount["부재중"] ?? 0) + (statusCount["연락대기"] ?? 0),
+    () => statusCount["1차 전화상담 대기"] ?? statusCount["신규"] ?? 0,
     [statusCount],
   );
   const staleCount = useMemo(

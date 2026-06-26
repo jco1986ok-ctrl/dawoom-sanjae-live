@@ -110,6 +110,7 @@ interface Props {
   onDiseaseCategoryUpdated?: (leadId: string, category: DiseaseCategory | null) => void;
   /** V2 등 — 기본 LeadStatusSelect 대체용 */
   StatusSelectComponent?: React.ComponentType<CustomerDetailStatusSelectProps>;
+  StatusBadgeComponent?: React.ComponentType<{ status: string }>;
 }
 
 export type CustomerDetailStatusSelectProps = {
@@ -135,8 +136,10 @@ export function CustomerDetailModal({
   onOtherDocsUpdated,
   onDiseaseCategoryUpdated,
   StatusSelectComponent,
+  StatusBadgeComponent,
 }: Props) {
   const StatusSelect = StatusSelectComponent ?? LeadStatusSelect;
+  const StatusBadge = StatusBadgeComponent ?? LeadStatusBadge;
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [categoryError, setCategoryError] = useState("");
@@ -405,7 +408,7 @@ export function CustomerDetailModal({
                   진행 상태
                 </p>
                 <div className="flex flex-col gap-2">
-                  <LeadStatusBadge status={row.consultationStatus} />
+                  <StatusBadge status={row.consultationStatus} />
                   <StatusSelect
                     leadId={row.id}
                     value={row.consultationStatus}

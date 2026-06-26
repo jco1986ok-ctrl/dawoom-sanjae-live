@@ -2,8 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { getLeadStatusSelectClass } from "@/lib/lead-status";
-import { getV2GroupedStatusOptions } from "@/lib/v2-lead-status-groups";
+import {
+  getV2LeadStatusSelectClass,
+  isValidV2LeadStatus,
+  normalizeV2LeadStatus,
+  V2_LEAD_STATUS_OPTIONS,
+} from "@/lib/v2-lead-status";
 import { updateV2LeadStatusWithReason } from "../_actions/status";
 import V2StatusChangeReasonModal from "./V2StatusChangeReasonModal";
 
@@ -24,19 +28,25 @@ export function V2LeadStatusSelect({
   className = "",
   disabled = false,
 }: V2LeadStatusSelectProps) {
-  const [status, setStatus] = useState(value);
+  const normalizedValue = normalizeV2LeadStatus(value);
+  const [status, setStatus] = useState(normalizedValue);
   const [error, setError] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
 
+  const orphanStatus =
+    !isValidV2LeadStatus(normalizedValue) &&
+    normalizedValue &&
+    !(V2_LEAD_STATUS_OPTIONS as readonly string[]).includes(normalizedValue)
+      ? normalizedValue
+      : null;
+
   useEffect(() => {
-    setStatus(value);
+    setStatus(normalizeV2LeadStatus(value));
     setError("");
   }, [leadId, value]);
-
-  const { groups, orphanStatuses } = getV2GroupedStatusOptions(status);
 
   const handleChange = (next: string) => {
     if (disabled || isPending) return;
@@ -71,7 +81,7 @@ export function V2LeadStatusSelect({
     const msg = result.error ?? "저장 실패";
     setError(
       msg.includes("enum lead_status")
-        ? "DB에 해당 상태값이 없습니다. Supabase에서 12_lead_status_expansion.sql 을 실행해 주세요."
+        ? "DB에 해당 상태값이 없습니다. Supabase에서 27_v2_six_stage_lead_status.sql 을 실행해 주세요."
         : msg,
     );
     return { success: false, error: msg };
@@ -97,7 +107,7 @@ export function V2LeadStatusSelect({
         >
           <select
             ref={selectRef}
-            value={status}
+            value={isValidV2LeadStatus(status) ? status : (orphanStatus ?? status)}
             onChange={(e) => handleChange(e.target.value)}
             disabled={disabled || isPending}
             aria-label="상담 상태 변경"
@@ -107,27 +117,19 @@ export function V2LeadStatusSelect({
               disabled:opacity-60 disabled:cursor-wait
               ${className.includes("w-full")
                 ? "w-full text-sm pl-3 pr-8 py-2.5 rounded-xl"
-                : "text-[11px] sm:text-xs pl-2.5 pr-7 py-1.5 max-w-[160px] sm:max-w-[180px]"}
-              ${getLeadStatusSelectClass(status)}`}
+                : "text-[11px] sm:text-xs pl-2.5 pr-7 py-1.5 max-w-[200px] sm:max-w-[220px]"}
+              ${getV2LeadStatusSelectClass(status)}`}
           >
-            {orphanStatuses.length > 0 && (
-              <optgroup label="기타(레거시)">
-                {orphanStatuses.map((s) => (
-                  <option key={`orphan-${s}`} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </optgroup>
+            {orphanStatus && (
+              <option value={orphanStatus}>{orphanStatus}</option>
             )}
-            {groups.map((group) => (
-              <optgroup key={group.id} label={group.label}>
-                {group.statuses.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
+            <optgroup label="업무 단계">
+              {V2_LEAD_STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </optgroup>
           </select>
           {isPending && (
             <Loader2 className="w-3 h-3 animate-spin text-slate-400 absolute right-2 pointer-events-none" />

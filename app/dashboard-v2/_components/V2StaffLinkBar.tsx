@@ -59,7 +59,7 @@ export default function V2StaffLinkBar({ agentId, urgentCount = 0, staleCount = 
           <div className="mb-3 flex flex-wrap gap-2">
             {urgentCount > 0 && (
               <span className="inline-flex items-center rounded-lg bg-amber-100 border border-amber-200 px-2.5 py-1 text-xs font-semibold text-amber-800">
-                신규·부재 {urgentCount}건
+                신규 상담 {urgentCount}건
               </span>
             )}
             {staleCount > 0 && (

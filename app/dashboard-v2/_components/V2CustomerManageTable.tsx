@@ -12,8 +12,8 @@ import {
   Trash2,
 } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
+import V2LeadStatusBadge from "./V2LeadStatusBadge";
 import { V2LeadStatusSelect } from "./V2LeadStatusSelect";
-import LeadStatusBadge from "@/app/dashboard/_components/LeadStatusBadge";
 import {
   CustomerDetailModal,
   applyDocsPatchToDetailRow,
@@ -21,11 +21,11 @@ import {
   notesToComments,
 } from "@/app/dashboard/_components/CustomerDetailModal";
 import {
-  CUSTOMER_QUICK_FILTERS,
-  CUSTOMER_TABLE_PAGE_SIZE,
-  matchesCustomerQuickFilter,
-  type CustomerQuickFilterId,
-} from "@/lib/lead-status";
+  V2_CUSTOMER_QUICK_FILTERS,
+  matchesV2CustomerQuickFilter,
+  type V2CustomerQuickFilterId,
+} from "../_lib/v2-customer-quick-filters";
+import { CUSTOMER_TABLE_PAGE_SIZE } from "@/lib/lead-status";
 import DiseaseCategoryBadge from "@/app/dashboard/_components/DiseaseCategoryBadge";
 import {
   V2_DISEASE_FILTERS,
@@ -108,7 +108,7 @@ export default function V2CustomerManageTable({
   );
   const [detailTarget, setDetailTarget] = useState<V2CustomerDetailRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [quickFilter, setQuickFilter] = useState<CustomerQuickFilterId>("all");
+  const [quickFilter, setQuickFilter] = useState<V2CustomerQuickFilterId>("all");
   const [diseaseFilter, setDiseaseFilter] = useState<V2DiseaseFilterId>("all");
   const [page, setPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -141,7 +141,7 @@ export default function V2CustomerManageTable({
     () =>
       scopedRows.filter(
         (r) =>
-          matchesCustomerQuickFilter(r.consultationStatus, quickFilter) &&
+          matchesV2CustomerQuickFilter(r.consultationStatus, quickFilter) &&
           matchesV2DiseaseFilter(
             {
               diseaseCategory: r.diseaseCategory,
@@ -166,7 +166,7 @@ export default function V2CustomerManageTable({
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  const handleQuickFilter = (id: CustomerQuickFilterId) => {
+  const handleQuickFilter = (id: V2CustomerQuickFilterId) => {
     setQuickFilter(id);
     setPage(1);
   };
@@ -312,7 +312,7 @@ export default function V2CustomerManageTable({
       {/* 퀵 필터 */}
       <div className="px-4 sm:px-5 pt-4 pb-3 border-b border-slate-100 bg-slate-50/50">
         <div className="flex flex-wrap gap-2">
-          {CUSTOMER_QUICK_FILTERS.map((f) => {
+          {V2_CUSTOMER_QUICK_FILTERS.map((f) => {
             const active = quickFilter === f.id;
             return (
               <button
@@ -412,7 +412,7 @@ export default function V2CustomerManageTable({
                       <span className={MOBILE_CARD_TITLE_CLASS}>{row.customerName}</span>
                       <DiseaseCategoryBadge category={row.diseaseCategory} compact />
                     </div>
-                    <LeadStatusBadge status={row.consultationStatus} />
+                    <V2LeadStatusBadge status={row.consultationStatus} />
                   </div>
 
                   {showDocsMatrix && (
@@ -541,7 +541,7 @@ export default function V2CustomerManageTable({
                   </FluidRowField>
                   <FluidRowField className="shrink-0 w-24">
                     <div className="flex flex-col gap-1 items-start">
-                      <LeadStatusBadge status={row.consultationStatus} />
+                      <V2LeadStatusBadge status={row.consultationStatus} />
                       <DiseaseCategoryBadge category={row.diseaseCategory} compact />
                     </div>
                   </FluidRowField>
@@ -708,7 +708,7 @@ export default function V2CustomerManageTable({
                       </div>
                     </td>
                     <td className="py-3 px-2 whitespace-nowrap align-middle">
-                      <LeadStatusBadge status={row.consultationStatus} />
+                      <V2LeadStatusBadge status={row.consultationStatus} />
                     </td>
                     <td className="py-3 px-2 whitespace-nowrap align-middle">
                       <PartnerConfirmBadge onClick={() => openDetail(row)} />
@@ -797,6 +797,7 @@ export default function V2CustomerManageTable({
         showDocuments={showDocsMatrix}
         viewerRole={viewerRole}
         StatusSelectComponent={V2LeadStatusSelect}
+        StatusBadgeComponent={V2LeadStatusBadge}
         onNotesUpdated={(id, notes) => applyNotes(id, notes)}
         onStatusUpdated={(id, status, notes) => updateStatus(id, status, notes)}
         onDocsUpdated={(id, patch) => {

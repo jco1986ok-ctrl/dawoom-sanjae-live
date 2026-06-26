@@ -12,7 +12,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import type { LeadDetail } from "@/lib/lead-detail";
+import { getV2LeadStatusLabel } from "@/lib/v2-lead-status";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import FAQAccordion from "@/app/dashboard/_components/FAQAccordion";
 import OverviewFunnelChart from "@/app/dashboard/_components/OverviewFunnelChart";
@@ -104,7 +104,7 @@ function SummaryTab({ leads }: { leads: LeadDetail[] }) {
     return recent
       .map(
         (l) =>
-          `${l.customer_name}(${formatLeadDiseaseDisplay(l.notes, l.disease_name)}, ${l.consultation_status})`,
+          `${l.customer_name}(${formatLeadDiseaseDisplay(l.notes, l.disease_name)}, ${getV2LeadStatusLabel(l.consultation_status)})`,
       )
       .join(" · ");
   }, [leads]);
@@ -259,7 +259,7 @@ function TeamTab({ leads, users }: { leads: LeadDetail[]; users: AdminUserListIt
                   {new Date(lead.created_at).toLocaleDateString("ko-KR")}
                 </span>
                 <span className="w-full sm:w-auto text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                  {lead.consultation_status}
+                  {getV2LeadStatusLabel(lead.consultation_status)}
                 </span>
               </li>
             ))}
@@ -399,7 +399,7 @@ function ScheduleTab({ leads }: { leads: LeadDetail[] }) {
                   <p className="text-[11px] text-slate-500 mt-0.5">
                     {formatLeadDiseaseDisplay(lead.notes, lead.disease_name)}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-1">{lead.consultation_status}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{getV2LeadStatusLabel(lead.consultation_status)}</p>
                 </li>
               ))}
             </ul>

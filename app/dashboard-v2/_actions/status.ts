@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isValidLeadStatus } from "@/lib/lead-status";
+import { isValidV2LeadStatus } from "@/lib/v2-lead-status";
 import { appendV2StatusChangeWithReasonToNotes } from "@/lib/lead-consult-memos";
 import type { UserRole } from "@/lib/types";
 
@@ -59,7 +59,7 @@ export async function updateV2LeadStatusWithReason(
     return { success: false, error: "변경 사유를 입력해 주세요." };
   }
 
-  if (!isValidLeadStatus(newStatus)) {
+  if (!isValidV2LeadStatus(newStatus)) {
     return { success: false, error: "올바르지 않은 상태값입니다." };
   }
 

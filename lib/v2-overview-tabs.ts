@@ -1,5 +1,5 @@
 import type { LeadDetail } from "@/lib/lead-detail";
-import { computeStatusGroupSummaries } from "@/lib/overview-dashboard";
+import { normalizeV2LeadStatus, V2_LEAD_STATUS_OPTIONS } from "@/lib/v2-lead-status";
 
 export const V2_OVERVIEW_TAB_IDS = [
   "summary",
@@ -37,11 +37,12 @@ export function buildV2OverviewHash(tab: V2OverviewTabId): string {
   return `#tab=${tab}`;
 }
 
-const IN_PROGRESS_STATUSES = new Set([
-  "계약완료",
-  "서류준비중",
-  "공단접수(심사중)",
-  "불승인(재심사)",
+const IN_PROGRESS_STATUSES = new Set<string>([
+  "서류 취합 중",
+  "현장방문 예정",
+  "노무사 서면작성 대기",
+  "공단접수 대기",
+  "공단 심사/결과 대기",
 ]);
 
 export type V2OverviewKpi = {
@@ -52,20 +53,27 @@ export type V2OverviewKpi = {
 };
 
 export function computeV2OverviewKpi(statusCount: Record<string, number>): V2OverviewKpi {
-  const groups = computeStatusGroupSummaries(statusCount);
-  const sales = groups.find((g) => g.id === "sales")?.total ?? 0;
+  const normalized: Record<string, number> = {};
+  for (const [raw, count] of Object.entries(statusCount)) {
+    const key = normalizeV2LeadStatus(raw);
+    normalized[key] = (normalized[key] ?? 0) + count;
+  }
+
+  const consulting = normalized["1차 전화상담 대기"] ?? 0;
   const inProgress = [...IN_PROGRESS_STATUSES].reduce(
-    (sum, status) => sum + (statusCount[status] ?? 0),
+    (sum, status) => sum + (normalized[status] ?? 0),
     0,
   );
-  const completed = statusCount["산재승인(완료)"] ?? 0;
-  const totalIntake = Object.values(statusCount).reduce((sum, n) => sum + n, 0);
+  const totalIntake = V2_LEAD_STATUS_OPTIONS.reduce(
+    (sum, status) => sum + (normalized[status] ?? 0),
+    0,
+  );
 
   return {
     totalIntake,
-    consulting: sales,
+    consulting,
     inProgress,
-    completed,
+    completed: 0,
   };
 }
 
