@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
-import { LeadStatusSelect } from "@/app/dashboard/_components/LeadStatusSelect";
+import { V2LeadStatusSelect } from "./V2LeadStatusSelect";
 import LeadStatusBadge from "@/app/dashboard/_components/LeadStatusBadge";
 import {
   CustomerDetailModal,
@@ -26,12 +26,12 @@ import {
   matchesCustomerQuickFilter,
   type CustomerQuickFilterId,
 } from "@/lib/lead-status";
-import {
-  DISEASE_CATEGORY_FILTERS,
-  matchesDiseaseCategoryFilter,
-  type DiseaseCategoryFilterId,
-} from "@/lib/disease-category";
 import DiseaseCategoryBadge from "@/app/dashboard/_components/DiseaseCategoryBadge";
+import {
+  V2_DISEASE_FILTERS,
+  matchesV2DiseaseFilter,
+  type V2DiseaseFilterId,
+} from "../_lib/v2-disease-filters";
 import {
   DesktopTableWrap,
   FluidDataRow,
@@ -109,7 +109,7 @@ export default function V2CustomerManageTable({
   const [detailTarget, setDetailTarget] = useState<V2CustomerDetailRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [quickFilter, setQuickFilter] = useState<CustomerQuickFilterId>("all");
-  const [diseaseFilter, setDiseaseFilter] = useState<DiseaseCategoryFilterId>("all");
+  const [diseaseFilter, setDiseaseFilter] = useState<V2DiseaseFilterId>("all");
   const [page, setPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -142,7 +142,14 @@ export default function V2CustomerManageTable({
       scopedRows.filter(
         (r) =>
           matchesCustomerQuickFilter(r.consultationStatus, quickFilter) &&
-          matchesDiseaseCategoryFilter(r.diseaseCategory, diseaseFilter),
+          matchesV2DiseaseFilter(
+            {
+              diseaseCategory: r.diseaseCategory,
+              diseaseName: r.diseaseName,
+              notes: r.notes,
+            },
+            diseaseFilter,
+          ),
       ),
     [scopedRows, quickFilter, diseaseFilter],
   );
@@ -164,7 +171,7 @@ export default function V2CustomerManageTable({
     setPage(1);
   };
 
-  const handleDiseaseFilter = (id: DiseaseCategoryFilterId) => {
+  const handleDiseaseFilter = (id: V2DiseaseFilterId) => {
     setDiseaseFilter(id);
     setPage(1);
   };
@@ -323,15 +330,17 @@ export default function V2CustomerManageTable({
             );
           })}
         </div>
-        <div className="flex flex-wrap gap-2 mt-2.5 pt-2.5 border-t border-slate-100">
-          {DISEASE_CATEGORY_FILTERS.map((f) => {
+        <div
+          className="flex gap-2 mt-2.5 pt-2.5 border-t border-slate-100 overflow-x-auto whitespace-nowrap scrollbar-hide"
+        >
+          {V2_DISEASE_FILTERS.map((f) => {
             const active = diseaseFilter === f.id;
             return (
               <button
                 key={f.id}
                 type="button"
                 onClick={() => handleDiseaseFilter(f.id)}
-                className={`inline-flex items-center px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all
+                className={`inline-flex shrink-0 items-center px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all
                   ${active
                     ? "bg-[#0f2d5e] text-white shadow-sm"
                     : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
@@ -480,7 +489,7 @@ export default function V2CustomerManageTable({
                   className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <LeadStatusSelect
+                  <V2LeadStatusSelect
                     leadId={row.id}
                     value={row.consultationStatus}
                     disabled={!canChangeStatus}
@@ -593,7 +602,7 @@ export default function V2CustomerManageTable({
 
                 <FluidRowBand onClick={(e) => e.stopPropagation()}>
                   <div className="flex flex-wrap items-center gap-2 w-full min-w-0">
-                    <LeadStatusSelect
+                    <V2LeadStatusSelect
                       leadId={row.id}
                       value={row.consultationStatus}
                       disabled={!canChangeStatus}
@@ -787,6 +796,7 @@ export default function V2CustomerManageTable({
         canDownloadContract={canDownloadContract}
         showDocuments={showDocsMatrix}
         viewerRole={viewerRole}
+        StatusSelectComponent={V2LeadStatusSelect}
         onNotesUpdated={(id, notes) => applyNotes(id, notes)}
         onStatusUpdated={(id, status, notes) => updateStatus(id, status, notes)}
         onDocsUpdated={(id, patch) => {

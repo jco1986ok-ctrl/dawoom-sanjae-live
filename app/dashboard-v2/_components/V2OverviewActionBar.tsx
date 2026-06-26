@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Link2, QrCode, Users } from "lucide-react";
+import { QrCode } from "lucide-react";
 import { toast } from "sonner";
-import type { DashboardTestRole } from "@/lib/dashboard-rbac";
 import { getSiteUrl } from "@/lib/site-url";
 import InviteLinkQrModal from "@/app/dashboard/_components/InviteLinkQrModal";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 async function copyText(text: string): Promise<void> {
   try {
@@ -24,18 +23,21 @@ async function copyText(text: string): Promise<void> {
   }
 }
 
-function partnerInviteLabel(role: DashboardTestRole) {
-  if (role === "마스터") return "파트너 초대";
-  if (role === "총괄파트너") return "파트너 초대";
-  return "동료 초대";
-}
+const copyButtonClass =
+  "inline-flex flex-1 items-center justify-center py-2 px-4 text-sm font-medium rounded-lg " +
+  "bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 " +
+  "transition-colors min-h-10 whitespace-nowrap";
+
+const qrButtonClass =
+  "inline-flex items-center justify-center size-10 shrink-0 rounded-lg " +
+  "bg-white text-blue-600 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 " +
+  "transition-colors";
 
 interface Props {
   agentId: string;
-  testRole: DashboardTestRole;
 }
 
-export default function V2OverviewActionBar({ agentId, testRole }: Props) {
+export default function V2OverviewActionBar({ agentId }: Props) {
   const [intakeQrOpen, setIntakeQrOpen] = useState(false);
   const [inviteQrOpen, setInviteQrOpen] = useState(false);
 
@@ -48,7 +50,7 @@ export default function V2OverviewActionBar({ agentId, testRole }: Props) {
       return;
     }
     await copyText(intakeUrl);
-    toast.success("접수폼 링크가 복사되었습니다.");
+    toast.success("산재 보상금 확인 링크가 복사되었습니다.");
   };
 
   const copyInvite = async () => {
@@ -57,55 +59,83 @@ export default function V2OverviewActionBar({ agentId, testRole }: Props) {
       return;
     }
     await copyText(inviteUrl);
-    toast.success("초대 링크가 복사되었습니다.");
+    toast.success("동료 초대 링크가 복사되었습니다.");
+  };
+
+  const openIntakeQr = () => {
+    if (!agentId) {
+      toast.error("에이전트 코드를 불러오지 못했습니다.");
+      return;
+    }
+    setIntakeQrOpen(true);
+  };
+
+  const openInviteQr = () => {
+    if (!agentId) {
+      toast.error("파트너 코드를 불러오지 못했습니다.");
+      return;
+    }
+    setInviteQrOpen(true);
   };
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-end gap-1.5">
-        <Button type="button" variant="outline" size="sm" onClick={copyIntake} className="h-8">
-          <Link2 className="size-3.5" />
-          접수 링크
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => (agentId ? setIntakeQrOpen(true) : toast.error("에이전트 코드를 불러오지 못했습니다."))}
-          aria-label="접수 QR"
-        >
-          <QrCode className="size-3.5" />
-        </Button>
-        <span className="hidden sm:block w-px h-5 bg-slate-200 mx-0.5" aria-hidden />
-        <Button type="button" variant="outline" size="sm" onClick={copyInvite} className="h-8">
-          <Users className="size-3.5" />
-          {partnerInviteLabel(testRole)}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => (agentId ? setInviteQrOpen(true) : toast.error("파트너 코드를 불러오지 못했습니다."))}
-          aria-label="초대 QR"
-        >
-          <QrCode className="size-3.5" />
-        </Button>
+      <div
+        className={cn(
+          "rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50/80 to-sky-50/60",
+          "px-4 py-3 sm:px-5 sm:py-3.5 shadow-sm",
+        )}
+        aria-label="링크 공유"
+      >
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <button type="button" onClick={copyIntake} className={copyButtonClass}>
+              🔗 산재 보상금 확인 링크복사
+            </button>
+            <button
+              type="button"
+              onClick={openIntakeQr}
+              className={qrButtonClass}
+              aria-label="산재 보상금 확인 QR코드"
+              title="QR코드 보기"
+            >
+              <QrCode className="size-4" />
+            </button>
+          </div>
+
+          <div className="hidden lg:block w-px self-stretch bg-blue-200/70 shrink-0" aria-hidden />
+
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <button type="button" onClick={copyInvite} className={copyButtonClass}>
+              🤝 동료 초대 복사
+            </button>
+            <button
+              type="button"
+              onClick={openInviteQr}
+              className={qrButtonClass}
+              aria-label="동료 초대 QR코드"
+              title="QR코드 보기"
+            >
+              <QrCode className="size-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
       <InviteLinkQrModal
         open={intakeQrOpen}
         onOpenChange={setIntakeQrOpen}
         url={intakeUrl}
-        title="고객 접수폼 QR코드"
-        description="스캔하면 무료 진단·접수 폼으로 이동합니다."
+        title="산재 보상금 확인 QR코드"
+        description="스캔하면 산재 보상금 무료 진단·접수 폼으로 이동합니다."
         downloadFileName="파로스_고객접수_QR.png"
       />
       <InviteLinkQrModal
         open={inviteQrOpen}
         onOpenChange={setInviteQrOpen}
         url={inviteUrl}
-        title="파트너 초대 QR코드"
-        description="스캔하면 파트너·제휴 멤버 가입 페이지로 이동합니다."
+        title="동료 초대 QR코드"
+        description="스캔하면 동료·제휴 멤버 가입 페이지로 이동합니다."
         downloadFileName="파로스_파트너초대_QR.png"
       />
     </>

@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
 import type { AdminUserListItem } from "@/lib/user-lineage";
-import type { DashboardTestRole } from "@/lib/dashboard-rbac";
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import {
   sortLeadsByRecency,
@@ -30,7 +29,6 @@ interface Props {
   users: AdminUserListItem[];
   statusCount: Record<string, number>;
   intakeAgentId: string;
-  currentUserRole: DashboardTestRole;
 }
 
 function IntakeRow({ lead }: { lead: LeadDetail }) {
@@ -132,7 +130,6 @@ export default function V2OverviewPanel({
   users,
   statusCount,
   intakeAgentId,
-  currentUserRole,
 }: Props) {
   const { activeTab, setHashTab } = useV2OverviewHashTab();
   const summaryCards = useMemo(
@@ -147,14 +144,14 @@ export default function V2OverviewPanel({
 
   return (
     <div className="grid gap-4">
-      {/* 상단 툴바 — 액션 버튼 그룹 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-2.5 shadow-sm border border-gray-100">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900">종합 요약</p>
-          <p className="text-[11px] text-slate-500">퍼널 · 업무 대기 · 최근 접수 한눈에</p>
-        </div>
-        <V2OverviewActionBar agentId={intakeAgentId} testRole={currentUserRole} />
+      {/* 섹션 타이틀 */}
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-900">종합 요약</p>
+        <p className="text-[11px] text-slate-500">퍼널 · 업무 대기 · 최근 접수 한눈에</p>
       </div>
+
+      {/* 링크 공유 액션 바 — KPI 카드 바로 위 */}
+      <V2OverviewActionBar agentId={intakeAgentId} />
 
       {/* KPI 카드 */}
       <V2SummaryCards cards={summaryCards} />

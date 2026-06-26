@@ -108,7 +108,17 @@ interface Props {
   ) => void;
   onOtherDocsUpdated?: (leadId: string, otherDocs: OtherDocEntry[]) => void;
   onDiseaseCategoryUpdated?: (leadId: string, category: DiseaseCategory | null) => void;
+  /** V2 등 — 기본 LeadStatusSelect 대체용 */
+  StatusSelectComponent?: React.ComponentType<CustomerDetailStatusSelectProps>;
 }
+
+export type CustomerDetailStatusSelectProps = {
+  leadId: string;
+  value: string;
+  onChanged?: (newStatus: string, notes?: string) => void;
+  className?: string;
+  disabled?: boolean;
+};
 
 export function CustomerDetailModal({
   row,
@@ -124,7 +134,9 @@ export function CustomerDetailModal({
   onDocsUpdated,
   onOtherDocsUpdated,
   onDiseaseCategoryUpdated,
+  StatusSelectComponent,
 }: Props) {
+  const StatusSelect = StatusSelectComponent ?? LeadStatusSelect;
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [categoryError, setCategoryError] = useState("");
@@ -394,7 +406,7 @@ export function CustomerDetailModal({
                 </p>
                 <div className="flex flex-col gap-2">
                   <LeadStatusBadge status={row.consultationStatus} />
-                  <LeadStatusSelect
+                  <StatusSelect
                     leadId={row.id}
                     value={row.consultationStatus}
                     disabled={!canChangeStatus}
@@ -737,21 +749,26 @@ function InfoItem({
 
 function CommentBubble({ comment }: { comment: ConsultComment }) {
   const isStatus = comment.kind === "status";
+  const isSystem = comment.author === "시스템";
 
   return (
     <div
       className={`rounded-2xl px-4 py-3 border shadow-sm ${
-        isStatus
-          ? "bg-indigo-50/80 border-indigo-100"
-          : "bg-white border-slate-200"
+        isSystem
+          ? "bg-slate-50 border-slate-200"
+          : isStatus
+            ? "bg-indigo-50/80 border-indigo-100"
+            : "bg-white border-slate-200"
       }`}
     >
       <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
         <span
           className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-            isStatus
-              ? "bg-indigo-100 text-indigo-700"
-              : "bg-cyan-100 text-cyan-800"
+            isSystem
+              ? "bg-slate-200 text-slate-700"
+              : isStatus
+                ? "bg-indigo-100 text-indigo-700"
+                : "bg-cyan-100 text-cyan-800"
           }`}
         >
           {comment.author}

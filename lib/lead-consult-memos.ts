@@ -1,6 +1,8 @@
 /** leads.notes 필드에 저장되는 노무사 상담 메모 형식 (스키마 변경 없음) */
 const MEMO_LINE = /^\[노무사 메모 (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\]\s*(.+)$/;
 const STATUS_LINE = /^\[상태 변경 (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\]\s*(.+)$/;
+const SYSTEM_LOG_LINE =
+  /^\[시스템 로그 (\d{4}-\d{2}-\d{2} \d{2}:\d{2})\]\s*(.+)$/;
 
 export interface ParsedConsultMemo {
   id: string;
@@ -64,6 +66,19 @@ export function parseConsultTimeline(notes: string | null | undefined): ConsultC
         text: changeText.trim(),
         kind: "status",
       });
+      continue;
+    }
+
+    const systemMatch = line.match(SYSTEM_LOG_LINE);
+    if (systemMatch) {
+      const [, stamp, content] = systemMatch;
+      out.push({
+        id: `tl-${idx++}`,
+        date: stamp.replace(" ", "T") + ":00",
+        author: "시스템",
+        text: content.trim(),
+        kind: "status",
+      });
     }
   }
 
@@ -86,6 +101,31 @@ export function formatStatusChangeLine(fromStatus: string, toStatus: string, at 
   const h = String(at.getHours()).padStart(2, "0");
   const mi = String(at.getMinutes()).padStart(2, "0");
   return `[상태 변경 ${y}-${mo}-${d} ${h}:${mi}] ${fromStatus} → ${toStatus}`;
+}
+
+export function formatV2StatusChangeSystemLog(
+  fromStatus: string,
+  toStatus: string,
+  reason: string,
+  at = new Date(),
+): string {
+  const y = at.getFullYear();
+  const mo = String(at.getMonth() + 1).padStart(2, "0");
+  const d = String(at.getDate()).padStart(2, "0");
+  const h = String(at.getHours()).padStart(2, "0");
+  const mi = String(at.getMinutes()).padStart(2, "0");
+  return `[시스템 로그 ${y}-${mo}-${d} ${h}:${mi}] 상태 변경: ${fromStatus} → ${toStatus} — ${reason.trim()}`;
+}
+
+export function appendV2StatusChangeWithReasonToNotes(
+  existing: string | null | undefined,
+  fromStatus: string,
+  toStatus: string,
+  reason: string,
+): string {
+  const line = formatV2StatusChangeSystemLog(fromStatus, toStatus, reason);
+  const base = existing?.trim() ?? "";
+  return base ? `${base}\n${line}` : line;
 }
 
 export function appendConsultMemoToNotes(

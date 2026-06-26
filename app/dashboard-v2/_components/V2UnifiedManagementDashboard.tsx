@@ -214,7 +214,6 @@ export default function V2UnifiedManagementDashboard({
             users={enrichedUsers}
             statusCount={overviewStats.statusCount}
             intakeAgentId={intakeAgentId}
-            currentUserRole={currentUserRole}
           />
         )}
 

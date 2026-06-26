@@ -11,7 +11,8 @@ import {
 } from "@/lib/collaboration-workflow";
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import LeadStatusBadge from "@/app/dashboard/_components/LeadStatusBadge";
-import { CustomerDetailModal } from "@/app/dashboard/_components/CustomerDetailModal";
+import { CustomerDetailModal, notesToComments } from "@/app/dashboard/_components/CustomerDetailModal";
+import { V2LeadStatusSelect } from "./V2LeadStatusSelect";
 import V2DetailActionPanel from "./V2DetailActionPanel";
 import {
   buildV2CustomerDetailRow,
@@ -91,6 +92,10 @@ export default function V2InsideStaffBoard({
       }
     >
   >({});
+  const [statusPatches, setStatusPatches] = useState<Record<string, string>>({});
+
+  const getLeadStatus = (lead: LeadDetail) =>
+    statusPatches[lead.id] ?? lead.consultation_status;
 
   const scopedLeads = useMemo(() => {
     let list = leads;
@@ -127,8 +132,32 @@ export default function V2InsideStaffBoard({
     return "";
   };
 
+  const applyStatusUpdate = (leadId: string, status: string, notes?: string) => {
+    setStatusPatches((prev) => ({ ...prev, [leadId]: status }));
+    setDetailTarget((prev) => {
+      if (!prev || prev.id !== leadId) return prev;
+      return {
+        ...prev,
+        consultationStatus: status,
+        ...(notes !== undefined
+          ? { notes, comments: notesToComments(notes) }
+          : {}),
+      };
+    });
+  };
+
+  const applyNotesUpdate = (leadId: string, notes: string) => {
+    setDetailTarget((prev) => {
+      if (!prev || prev.id !== leadId) return prev;
+      return { ...prev, notes, comments: notesToComments(notes) };
+    });
+  };
+
   const openDetail = (lead: LeadDetail) => {
-    const row = buildV2CustomerDetailRow(lead, users);
+    const leadForRow = statusPatches[lead.id]
+      ? { ...lead, consultation_status: statusPatches[lead.id] }
+      : lead;
+    const row = buildV2CustomerDetailRow(leadForRow, users);
     const patched = assignmentPatches[lead.id];
     const merged = patched
       ? {
@@ -262,7 +291,7 @@ export default function V2InsideStaffBoard({
                           {formatLeadDiseaseDisplay(lead.notes, lead.disease_name)}
                         </p>
                         <div className="mt-2">
-                          <LeadStatusBadge status={lead.consultation_status} />
+                          <LeadStatusBadge status={getLeadStatus(lead)} />
                         </div>
                       </button>
                     </li>
@@ -281,8 +310,9 @@ export default function V2InsideStaffBoard({
         canChangeStatus={canChangeStatus}
         canWriteMemo={canWriteMemo}
         viewerRole={viewerRole}
-        onNotesUpdated={() => {}}
-        onStatusUpdated={() => {}}
+        StatusSelectComponent={V2LeadStatusSelect}
+        onNotesUpdated={applyNotesUpdate}
+        onStatusUpdated={applyStatusUpdate}
       />
 
       {detailOpen && detailTarget && (
