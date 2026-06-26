@@ -25,9 +25,9 @@ import {
   getAnalyticsViewTier,
 } from "@/lib/analytics-cockpit";
 import { PartnerNetworkSections } from "@/app/dashboard/_components/PartnerNetworkSections";
-import AttorneyCustomerManageTable from "@/app/dashboard/_components/AttorneyCustomerManageTable";
 import AdminPdfCalibrateButton from "@/app/dashboard/admin/_components/AdminPdfCalibrateButton";
 import V2OverviewPanel from "./V2OverviewPanel";
+import V2CustomerCollaborationSection from "./V2CustomerCollaborationSection";
 
 type TabId = "overview" | "customers" | "partners";
 
@@ -209,9 +209,11 @@ export default function V2UnifiedManagementDashboard({
               <div className="min-w-0 flex-1">
                 <h2 className="font-bold text-slate-900 text-sm tracking-tight">접수된 고객(DB) 관리</h2>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  {permissions.canChangeLeadStatus || permissions.canWriteConsultMemo
-                    ? "진행 상태 변경 · 상담 메모 작성"
-                    : "열람 전용 — 진행 상황 확인"}
+                  {currentUserRole === "일반팀원"
+                    ? "3인 협업 보드 — 내 할 일 · 현장 · 노무사 구역"
+                    : permissions.canChangeLeadStatus || permissions.canWriteConsultMemo
+                      ? "진행 상태 변경 · 상담 메모 · 바통 터치"
+                      : "열람 전용 — 진행 상황 확인"}
                 </p>
               </div>
               {!permissions.canChangeLeadStatus && !permissions.canWriteConsultMemo && (
@@ -220,11 +222,12 @@ export default function V2UnifiedManagementDashboard({
                 </span>
               )}
             </div>
-            <AttorneyCustomerManageTable
+            <V2CustomerCollaborationSection
               leads={displayLeads}
               assignedTo={analyticsTier === "staff" ? simulation.effectiveViewerId : undefined}
               clientRefetch={analyticsTier === "executive"}
               viewerRole={viewerRole}
+              currentUserRole={currentUserRole}
               canChangeStatus={permissions.canChangeLeadStatus}
               canWriteMemo={permissions.canWriteConsultMemo}
               canDelete={permissions.canDeleteLeads}

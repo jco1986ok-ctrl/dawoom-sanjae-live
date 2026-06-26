@@ -43,6 +43,7 @@ export function realtimeRowToLeadDetail(row: RealtimeLeadRow): LeadDetail {
     docs_status: (row.docs_status as LeadDetail["docs_status"]) ?? null,
     referred_by_user_id: nullableStr(row.referred_by_user_id),
     assigned_to: nullableStr(row.assigned_to),
+    current_owner_role: nullableStr(row.current_owner_role),
   };
 }
 
@@ -81,6 +82,10 @@ export function mergeLeadFromRealtime(
         ? nullableStr(row.referred_by_user_id)
         : existing.referred_by_user_id,
     assigned_to: row.assigned_to !== undefined ? nullableStr(row.assigned_to) : existing.assigned_to,
+    current_owner_role:
+      row.current_owner_role !== undefined
+        ? nullableStr(row.current_owner_role)
+        : existing.current_owner_role,
     created_at: row.created_at != null ? str(row.created_at, existing.created_at) : existing.created_at,
   };
 }

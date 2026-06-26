@@ -1,5 +1,6 @@
-import type { LeadDocsStatus } from "@/lib/lead-docs-status";
+import type { CollaborationOwnerRole } from "@/lib/collaboration-workflow";
 import type { AgentAccountInfo, InflowInfo } from "@/lib/lead-attribution";
+import type { LeadDocsStatus } from "@/lib/lead-docs-status";
 import type { UserLineageNode } from "@/lib/user-lineage";
 
 /** 대시보드·V2 공용 리드 상세 타입 (UI 컴포넌트와 분리) */
@@ -30,4 +31,5 @@ export interface LeadDetail {
   is_viewer_direct?: boolean;
   assigned_to?: string | null;
   assigned_attorney_name?: string | null;
+  current_owner_role?: CollaborationOwnerRole | string | null;
 }

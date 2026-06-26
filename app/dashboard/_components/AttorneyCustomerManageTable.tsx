@@ -55,6 +55,7 @@ import { PartnerConfirmBadge } from "./PartnerConfirmBadge";
 import { BulkDocumentsDownloadButton } from "./BulkDocumentsDownloadButton";
 import { DocCollectionProgressBadge, DocumentsWithProgress } from "./DocCollectionProgressBadge";
 import { deleteLead } from "../_actions/leads";
+import type { CollaborationOwnerRole } from "@/lib/collaboration-workflow";
 
 interface Props {
   leads?: LeadDetail[];
@@ -68,6 +69,11 @@ interface Props {
   canWriteMemo?: boolean;
   /** 마스터(관리자) 접수 DB 삭제 */
   canDelete?: boolean;
+  /** V2 협업 — 상세 모달 바통 터치 영역 */
+  renderCollaborationBar?: (
+    row: CustomerDetailRow,
+    helpers: { onOwnerRoleUpdated: (role: CollaborationOwnerRole) => void },
+  ) => React.ReactNode;
 }
 
 export default function AttorneyCustomerManageTable({
@@ -78,6 +84,7 @@ export default function AttorneyCustomerManageTable({
   canChangeStatus = true,
   canWriteMemo = true,
   canDelete = false,
+  renderCollaborationBar,
 }: Props) {
   const showDocsMatrix = canViewDocumentsMatrix(viewerRole);
   const docsInteractive = showDocsMatrix;
@@ -170,6 +177,15 @@ export default function AttorneyCustomerManageTable({
     const latest = rows.find((r) => r.id === row.id) ?? row;
     setDetailTarget(latest);
     setDetailOpen(true);
+  };
+
+  const applyOwnerRole = (leadId: string, role: CollaborationOwnerRole) => {
+    setRows((prev) =>
+      prev.map((r) => (r.id === leadId ? { ...r, currentOwnerRole: role } : r)),
+    );
+    setDetailTarget((prev) =>
+      prev?.id === leadId ? { ...prev, currentOwnerRole: role } : prev,
+    );
   };
 
   const closeDetail = () => {
@@ -698,6 +714,13 @@ export default function AttorneyCustomerManageTable({
         onDiseaseCategoryUpdated={(id, category) => {
           syncRowData(id, { diseaseCategory: category });
         }}
+        collaborationBar={
+          renderCollaborationBar && detailTarget
+            ? renderCollaborationBar(detailTarget, {
+                onOwnerRoleUpdated: (role) => applyOwnerRole(detailTarget.id, role),
+              })
+            : undefined
+        }
       />
     </>
   );

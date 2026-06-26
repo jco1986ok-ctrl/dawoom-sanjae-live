@@ -1,6 +1,6 @@
 /** 마이그레이션 전후 공통 — pdf_url 없이도 조회 가능한 코어 컬럼 */
 export const LEADS_LIST_SELECT_CORE =
-  "id, customer_name, phone, disease_name, disease_category, fee_amount, consultation_status, created_at, referral_source, notes" as const;
+  "id, customer_name, phone, disease_name, disease_category, fee_amount, consultation_status, current_owner_role, created_at, referral_source, notes" as const;
 
 /** pdf_url·docs_status·has_weim·other_docs 마이그레이션 적용 후 */
 export const LEADS_LIST_SELECT =

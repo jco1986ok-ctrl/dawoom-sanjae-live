@@ -10,6 +10,7 @@ import PwaInstallBanner from "@/components/pwa/PwaInstallBanner";
 import InAppBrowserEscape from "@/components/pwa/InAppBrowserEscape";
 import { fetchRecentNotices } from "../dashboard/_actions/notices";
 import V2SandboxBanner from "./_components/V2SandboxBanner";
+import V2TopToolbar from "./_components/V2TopToolbar";
 import { pwaAssetUrl } from "@/lib/pwa-asset-version";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +64,11 @@ export default async function DashboardV2Layout({
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col pb-[calc(7rem+env(safe-area-inset-bottom,0px))] sm:pb-28">
       <DashboardNav user={profile as AppUser} />
+      <div className="bg-[#0f2d5e] border-b border-[#0f2d5e]">
+        <div className={`${DASHBOARD_SHELL_X} py-2 flex items-center justify-end`}>
+          <V2TopToolbar />
+        </div>
+      </div>
       <main className="flex-1 w-full">
         <div className={`${DASHBOARD_SHELL_X} pt-4 flex flex-col gap-3`}>
           <V2SandboxBanner />
