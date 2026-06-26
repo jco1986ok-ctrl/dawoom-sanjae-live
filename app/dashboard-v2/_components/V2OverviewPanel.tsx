@@ -1,16 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  TrendingUp,
-} from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import type { DashboardTestRole } from "@/lib/dashboard-rbac";
-import CustomerIntakeLinkBanner from "@/app/dashboard/_components/CustomerIntakeLinkBanner";
-import AdminMasterInviteButton from "@/app/dashboard/admin/_components/AdminMasterInviteButton";
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import {
   sortLeadsByRecency,
@@ -25,6 +19,9 @@ import { useV2OverviewHashTab } from "./use-v2-overview-hash-tab";
 import V2OverviewTabPanels from "./V2OverviewTabPanels";
 import V2SummaryCards from "./V2SummaryCards";
 import V2BottleneckStats from "./V2BottleneckStats";
+import V2OverviewActionBar from "./V2OverviewActionBar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface Props {
   leads: LeadDetail[];
@@ -40,13 +37,13 @@ function IntakeRow({ lead }: { lead: LeadDetail }) {
   const date = new Date(lead.created_at).toLocaleDateString("ko-KR");
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 py-3 border-b border-slate-100 last:border-0 min-w-0">
+    <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 last:border-0 min-w-0 hover:bg-slate-50/80 transition-colors">
       <div className="min-w-0 flex-1">
-        <p className="font-bold text-slate-900 text-sm truncate">{lead.customer_name}</p>
-        <p className="text-[11px] text-slate-500 truncate mt-0.5">{disease}</p>
+        <p className="font-medium text-slate-900 text-sm truncate">{lead.customer_name}</p>
+        <p className="text-[11px] text-slate-500 truncate">{disease}</p>
       </div>
-      <p className="text-[11px] text-slate-400 tabular-nums shrink-0">{date}</p>
-      <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#0f2d5e]/10 text-[#0f2d5e] whitespace-nowrap shrink-0">
+      <p className="text-[11px] text-slate-400 tabular-nums shrink-0 hidden sm:block">{date}</p>
+      <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 whitespace-nowrap shrink-0">
         {lead.consultation_status}
       </span>
     </div>
@@ -58,73 +55,71 @@ function FullHistorySection({ leads }: { leads: LeadDetail[] }) {
   const sorted = useMemo(() => sortLeadsByRecency(leads), [leads]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 border-b border-slate-100">
+    <Card className="gap-0 py-0 shadow-sm border-slate-200/80 bg-white">
+      <CardHeader className="px-4 pt-4 pb-3 flex flex-row items-center justify-between gap-3 border-b border-slate-100">
         <div>
-          <h3 className="font-bold text-slate-900 text-sm">상세 고객 이력</h3>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            전체 {sorted.length}건 · 필요 시에만 펼쳐 확인
-          </p>
+          <CardTitle className="text-sm font-semibold">상세 고객 이력</CardTitle>
+          <CardDescription className="text-xs">전체 {sorted.length}건</CardDescription>
         </div>
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold
-            bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors min-h-[44px]"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
+            bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
         >
           {expanded ? (
             <>
-              <ChevronUp className="w-4 h-4" />
+              <ChevronUp className="size-3.5" />
               접기
             </>
           ) : (
             <>
-              <ChevronDown className="w-4 h-4" />
-              전체 이력 보기
+              <ChevronDown className="size-3.5" />
+              펼치기
             </>
           )}
         </button>
-      </div>
+      </CardHeader>
 
       {expanded && (
-        <div className="overflow-x-auto">
+        <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 text-left text-[11px] text-slate-500 uppercase tracking-wide">
-                <th className="px-4 py-3 font-bold">고객명</th>
-                <th className="px-4 py-3 font-bold">질병명</th>
-                <th className="px-4 py-3 font-bold">접수일</th>
-                <th className="px-4 py-3 font-bold">상태</th>
-                <th className="px-4 py-3 font-bold">추천인</th>
+              <tr className="bg-slate-50 text-left text-[11px] text-slate-500">
+                <th className="px-4 py-2.5 font-medium">고객명</th>
+                <th className="px-4 py-2.5 font-medium">질병명</th>
+                <th className="px-4 py-2.5 font-medium">접수일</th>
+                <th className="px-4 py-2.5 font-medium">상태</th>
+                <th className="px-4 py-2.5 font-medium">추천인</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {sorted.map((lead) => (
                 <tr key={lead.id} className="hover:bg-slate-50/80">
-                  <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">
+                  <td className="px-4 py-2.5 font-medium text-slate-800 whitespace-nowrap">
                     {lead.customer_name}
                   </td>
-                  <td className="px-4 py-3 text-slate-600 max-w-[200px] truncate">
+                  <td className="px-4 py-2.5 text-slate-600 max-w-[200px] truncate">
                     {formatLeadDiseaseDisplay(lead.notes, lead.disease_name)}
                   </td>
-                  <td className="px-4 py-3 text-slate-500 tabular-nums whitespace-nowrap">
+                  <td className="px-4 py-2.5 text-slate-500 tabular-nums whitespace-nowrap">
                     {new Date(lead.created_at).toLocaleDateString("ko-KR")}
                   </td>
-                  <td className="px-4 py-3">
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                  <td className="px-4 py-2.5">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
                       {lead.consultation_status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-500 text-xs truncate max-w-[120px]">
+                  <td className="px-4 py-2.5 text-slate-500 text-xs truncate max-w-[120px]">
                     {lead.referral_source || "—"}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </CardContent>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -148,38 +143,46 @@ export default function V2OverviewPanel({
   const spotlightLeads = useMemo(() => sortLeadsByRecency(displayLeads).slice(0, 5), [displayLeads]);
 
   return (
-    <div className="flex flex-col gap-5">
-      <CustomerIntakeLinkBanner agentId={intakeAgentId} />
-      <AdminMasterInviteButton agentId={intakeAgentId} testRole={currentUserRole} />
+    <div className="grid gap-4">
+      {/* 상단 툴바 — 액션 버튼 그룹 */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200/80 bg-white px-4 py-2.5 shadow-sm">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900">종합 요약</p>
+          <p className="text-[11px] text-slate-500">퍼널 · 병목 · 최근 접수 한눈에</p>
+        </div>
+        <V2OverviewActionBar agentId={intakeAgentId} testRole={currentUserRole} />
+      </div>
 
-      {/* [1단계] 상단 고정 — 핵심 수치 + 최근 접수 */}
-      <section
-        className="sticky top-0 z-20 -mx-0 rounded-2xl border border-slate-200/80 bg-slate-50/95 backdrop-blur-md shadow-sm"
-        aria-label="종합 요약 핵심 영역"
-      >
-        <div className="p-4 sm:p-5 flex flex-col gap-4">
-          <V2SummaryCards cards={summaryCards} />
+      {/* KPI 카드 */}
+      <V2SummaryCards cards={summaryCards} />
+
+      {/* 병목 + 최근 접수 */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-4">
           <V2BottleneckStats stats={bottleneckStats} />
+        </div>
 
-          <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 bg-white">
-              <TrendingUp className="w-4 h-4 text-[#0f2d5e]" />
-              <h2 className="font-bold text-slate-800 text-sm">최근 접수 핵심 정보</h2>
-              <span className="text-[10px] text-slate-400 ml-auto">최대 5건</span>
+        <Card className="lg:col-span-8 gap-0 py-0 shadow-sm border-slate-200/80 bg-white h-full">
+          <CardHeader className="px-4 pt-4 pb-2 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-semibold">최근 접수</CardTitle>
+              <CardDescription className="text-xs">최대 5건</CardDescription>
             </div>
+          </CardHeader>
+          <CardContent className="p-0 pb-1">
             {spotlightLeads.length === 0 ? (
               <p className="text-sm text-slate-400 px-4 py-8 text-center">표시할 접수 건이 없습니다.</p>
             ) : (
               spotlightLeads.map((lead) => <IntakeRow key={lead.id} lead={lead} />)
             )}
-          </div>
-        </div>
-      </section>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* [2단계] 해시 연동 탭 */}
-      <section aria-label="종합 요약 상세 탭">
+      {/* 상세 탭 */}
+      <section aria-label="종합 요약 상세 탭" className="grid gap-4">
         <div
-          className="bg-white rounded-2xl shadow-md border border-slate-200/80 p-2 flex gap-1.5 overflow-x-auto"
+          className="bg-white rounded-lg border border-slate-200/80 shadow-sm p-1 flex gap-1 overflow-x-auto"
           role="tablist"
         >
           {V2_OVERVIEW_TAB_IDS.map((tabId) => (
@@ -189,24 +192,23 @@ export default function V2OverviewPanel({
               role="tab"
               aria-selected={activeTab === tabId}
               onClick={() => setHashTab(tabId)}
-              className={`flex-1 min-w-[max-content] min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-bold transition-colors whitespace-nowrap
-                ${
-                  activeTab === tabId
-                    ? "bg-[#0f2d5e] text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-                }`}
+              className={cn(
+                "flex-1 min-w-[max-content] px-3 py-2 rounded-md text-xs font-semibold transition-colors whitespace-nowrap",
+                activeTab === tabId
+                  ? "bg-[#0f2d5e] text-white"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50",
+              )}
             >
               {V2_OVERVIEW_TAB_LABELS[tabId]}
             </button>
           ))}
         </div>
 
-        <div className="mt-4" role="tabpanel">
+        <div role="tabpanel">
           <V2OverviewTabPanels tab={activeTab} leads={leads} users={users} />
         </div>
       </section>
 
-      {/* [3단계] 접이식 전체 이력 */}
       <FullHistorySection leads={displayLeads} />
     </div>
   );
