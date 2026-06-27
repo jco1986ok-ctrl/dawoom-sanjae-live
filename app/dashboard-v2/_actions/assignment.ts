@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDashboardV2MasterRole } from "@/lib/dashboard-v2-access";
+import { isV2AssignableRole } from "@/lib/v2-assignable-users";
 
 async function requireV2Access() {
   const supabase = await createClient();
@@ -40,12 +41,19 @@ export async function assignLeadUser(
   const admin = createAdminClient();
   const { data: assignee } = await admin
     .from("users")
-    .select("id, name")
+    .select("id, name, role")
     .eq("id", assignedUserId)
     .maybeSingle();
 
   if (!assignee) {
     return { success: false, error: "선택한 담당자를 찾을 수 없습니다." };
+  }
+
+  if (!isV2AssignableRole(assignee.role as string)) {
+    return {
+      success: false,
+      error: "배정 가능한 직책(마스터·총괄파트너·대표노무사·노무사)만 담당자로 지정할 수 있습니다.",
+    };
   }
 
   const trimmedMemo = memo.trim();

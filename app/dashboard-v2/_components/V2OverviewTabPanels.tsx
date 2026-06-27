@@ -12,6 +12,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import type { LeadDetail } from "@/lib/lead-detail";
 import { getV2LeadStatusLabel } from "@/lib/v2-lead-status";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import FAQAccordion from "@/app/dashboard/_components/FAQAccordion";
@@ -34,6 +35,7 @@ interface Props {
   tab: V2OverviewTabId;
   leads: LeadDetail[];
   users: AdminUserListItem[];
+  canViewFinancialData?: boolean;
 }
 
 function CockpitCard({
@@ -188,7 +190,15 @@ function FinanceTab({ leads }: { leads: LeadDetail[] }) {
   );
 }
 
-function TeamTab({ leads, users }: { leads: LeadDetail[]; users: AdminUserListItem[] }) {
+function TeamTab({
+  leads,
+  users,
+  canViewFinancialData = true,
+}: {
+  leads: LeadDetail[];
+  users: AdminUserListItem[];
+  canViewFinancialData?: boolean;
+}) {
   const topPartners = useMemo(() => computeTopPartners(leads, users, 5, true), [leads, users]);
 
   const recentReferrals = useMemo(
@@ -204,7 +214,7 @@ function TeamTab({ leads, users }: { leads: LeadDetail[]; users: AdminUserListIt
     <div className="flex flex-col gap-4">
       <CockpitCard
         title="이달의 우수 파트너 TOP 5"
-        subtitle="매칭 건수 · 예상 수임료 합계"
+        subtitle={canViewFinancialData ? "매칭 건수 · 예상 수임료 합계" : "매칭 건수"}
         icon={<Trophy className="w-4 h-4" />}
       >
         {topPartners.length === 0 ? (
@@ -223,7 +233,7 @@ function TeamTab({ leads, users }: { leads: LeadDetail[]; users: AdminUserListIt
                   <p className="font-bold text-slate-900 text-sm truncate">{item.name}</p>
                   <p className="text-[11px] text-slate-400">
                     이번 달 {item.count}건 매칭
-                    {item.feeTotal > 0 && (
+                    {canViewFinancialData && item.feeTotal > 0 && (
                       <span className="text-emerald-600 font-semibold ml-1">
                         · 예상 {formatKrw(item.feeTotal)}
                       </span>
@@ -414,14 +424,21 @@ export default function V2OverviewTabPanels({
   tab,
   leads,
   users,
+  canViewFinancialData = true,
 }: Props) {
   switch (tab) {
     case "summary":
       return <SummaryTab leads={leads} />;
     case "finance":
-      return <FinanceTab leads={leads} />;
+      return canViewFinancialData ? <FinanceTab leads={leads} /> : <SummaryTab leads={leads} />;
     case "team":
-      return <TeamTab leads={leads} users={users} />;
+      return (
+        <TeamTab
+          leads={leads}
+          users={users}
+          canViewFinancialData={canViewFinancialData}
+        />
+      );
     case "schedule":
       return <ScheduleTab leads={leads} />;
     case "faq":

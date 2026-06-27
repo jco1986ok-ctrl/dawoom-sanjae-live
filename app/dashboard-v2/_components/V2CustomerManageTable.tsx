@@ -78,6 +78,10 @@ interface Props {
   canDelete?: boolean;
   /** 관리자 독촉 알림 */
   canSendReminder?: boolean;
+  /** 담당자 배정 */
+  canAssign?: boolean;
+  /** 바통 터치(협업 구역 이동) */
+  canCollaborate?: boolean;
 }
 
 export default function V2CustomerManageTable({
@@ -92,6 +96,8 @@ export default function V2CustomerManageTable({
   canWriteMemo = true,
   canDelete = false,
   canSendReminder = false,
+  canAssign = false,
+  canCollaborate = false,
 }: Props) {
   const showDocsMatrix = canViewDocumentsMatrix(viewerRole);
   const docsInteractive = showDocsMatrix;
@@ -489,13 +495,16 @@ export default function V2CustomerManageTable({
                   className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <V2LeadStatusSelect
-                    leadId={row.id}
-                    value={row.consultationStatus}
-                    disabled={!canChangeStatus}
-                    className="w-full"
-                    onChanged={(s, notes) => updateStatus(row.id, s, notes)}
-                  />
+                  {canChangeStatus ? (
+                    <V2LeadStatusSelect
+                      leadId={row.id}
+                      value={row.consultationStatus}
+                      className="w-full"
+                      onChanged={(s, notes) => updateStatus(row.id, s, notes)}
+                    />
+                  ) : (
+                    <V2LeadStatusBadge status={row.consultationStatus} />
+                  )}
                   {canWriteMemo ? (
                     <button
                       type="button"
@@ -602,13 +611,16 @@ export default function V2CustomerManageTable({
 
                 <FluidRowBand onClick={(e) => e.stopPropagation()}>
                   <div className="flex flex-wrap items-center gap-2 w-full min-w-0">
-                    <V2LeadStatusSelect
-                      leadId={row.id}
-                      value={row.consultationStatus}
-                      disabled={!canChangeStatus}
-                      className="flex-1 min-w-[140px] max-w-full"
-                      onChanged={(s, notes) => updateStatus(row.id, s, notes)}
-                    />
+                    {canChangeStatus ? (
+                      <V2LeadStatusSelect
+                        leadId={row.id}
+                        value={row.consultationStatus}
+                        className="flex-1 min-w-[140px] max-w-full"
+                        onChanged={(s, notes) => updateStatus(row.id, s, notes)}
+                      />
+                    ) : (
+                      <V2LeadStatusBadge status={row.consultationStatus} />
+                    )}
                     {canWriteMemo ? (
                       <button
                         type="button"
@@ -831,6 +843,8 @@ export default function V2CustomerManageTable({
         <V2DetailActionPanel
           row={detailTarget}
           users={users}
+          canAssign={canAssign}
+          canCollaborate={canCollaborate}
           canSendReminder={canSendReminder}
           onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
           onAssigned={(patch) => applyAssignment(detailTarget.id, patch)}

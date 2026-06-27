@@ -160,16 +160,11 @@ export function computeTopPartners(
 export function getLineReferredByIds(
   viewerId: string,
   testRole: DashboardTestRole,
-  users: AdminUserListItem[],
+  _users: AdminUserListItem[],
 ): Set<string> {
-  /** 제휴파트너: 본인 유치 DB만 (초대한 하위 파트너 데이터 제외) */
-  if (testRole === "제휴파트너") {
+  /** 외부 파트너(공식·제휴): 본인 유입(referred_by_user_id) 건만 */
+  if (testRole === "제휴파트너" || testRole === "공식파트너") {
     return new Set([viewerId]);
-  }
-
-  /** 공식파트너: 본인 + 하위 제휴·발굴 공식파트너 라인 전체 */
-  if (testRole === "공식파트너") {
-    return collectPartnerSubtreeIds(viewerId, users);
   }
 
   return new Set([viewerId]);

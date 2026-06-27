@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
 import type { AdminUserListItem } from "@/lib/user-lineage";
@@ -13,6 +13,7 @@ import {
   sortLeadsByRecency,
   V2_OVERVIEW_TAB_IDS,
   V2_OVERVIEW_TAB_LABELS,
+  getV2OverviewTabsForRole,
 } from "@/lib/v2-overview-tabs";
 import {
   computeV2WorkQueueStats,
@@ -34,6 +35,7 @@ interface Props {
   statusCount: Record<string, number>;
   intakeAgentId: string;
   currentUserRole: DashboardTestRole;
+  canViewFinancialData?: boolean;
 }
 
 function IntakeRow({ lead }: { lead: LeadDetail }) {
@@ -136,9 +138,20 @@ export default function V2OverviewPanel({
   statusCount,
   intakeAgentId,
   currentUserRole,
+  canViewFinancialData = true,
 }: Props) {
   const headerCopy = getV2OverviewHeaderCopy(currentUserRole);
   const { activeTab, setHashTab } = useV2OverviewHashTab();
+  const visibleTabs = useMemo(
+    () => getV2OverviewTabsForRole(currentUserRole),
+    [currentUserRole],
+  );
+
+  useEffect(() => {
+    if (!visibleTabs.includes(activeTab)) {
+      setHashTab(visibleTabs[0] ?? "summary");
+    }
+  }, [activeTab, visibleTabs, setHashTab]);
   const summaryCards = useMemo(
     () => computeV2MainSummaryCards(statusCount),
     [statusCount],
@@ -205,7 +218,7 @@ export default function V2OverviewPanel({
           className={cn(v2SurfaceCard(), "p-1 flex gap-1 overflow-x-auto")}
           role="tablist"
         >
-          {V2_OVERVIEW_TAB_IDS.map((tabId) => (
+          {visibleTabs.map((tabId) => (
             <button
               key={tabId}
               type="button"
@@ -225,7 +238,12 @@ export default function V2OverviewPanel({
         </div>
 
         <div role="tabpanel">
-          <V2OverviewTabPanels tab={activeTab} leads={leads} users={users} />
+          <V2OverviewTabPanels
+            tab={activeTab}
+            leads={leads}
+            users={users}
+            canViewFinancialData={canViewFinancialData}
+          />
         </div>
       </section>
 

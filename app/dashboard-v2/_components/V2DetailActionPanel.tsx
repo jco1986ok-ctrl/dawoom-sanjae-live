@@ -11,12 +11,16 @@ import type { AdminUserListItem } from "@/lib/user-lineage";
 export default function V2DetailActionPanel({
   row,
   users,
+  canAssign = false,
+  canCollaborate = false,
   canSendReminder = false,
   onOwnerRoleUpdated,
   onAssigned,
 }: {
   row: V2CustomerDetailRow;
   users: AdminUserListItem[];
+  canAssign?: boolean;
+  canCollaborate?: boolean;
   canSendReminder?: boolean;
   onOwnerRoleUpdated: (role: CollaborationOwnerRole) => void;
   onAssigned: (patch: {
@@ -26,6 +30,10 @@ export default function V2DetailActionPanel({
     isRead: boolean;
   }) => void;
 }) {
+  if (!canAssign && !canCollaborate && !canSendReminder) {
+    return null;
+  }
+
   return (
     <div className="fixed inset-x-0 bottom-0 z-[70] pointer-events-none px-4 pb-4 sm:pb-6 max-h-[55vh] overflow-y-auto">
       <div
@@ -34,8 +42,12 @@ export default function V2DetailActionPanel({
         aria-label="협업 액션 패널"
       >
         {canSendReminder && <V2ReminderButton row={row} />}
-        <V2HandoffPanel row={row} onOwnerRoleUpdated={onOwnerRoleUpdated} />
-        <V2AssignPanel row={row} users={users} onAssigned={onAssigned} />
+        {canCollaborate && (
+          <V2HandoffPanel row={row} onOwnerRoleUpdated={onOwnerRoleUpdated} />
+        )}
+        {canAssign && (
+          <V2AssignPanel row={row} users={users} onAssigned={onAssigned} />
+        )}
       </div>
     </div>
   );

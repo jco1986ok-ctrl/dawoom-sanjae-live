@@ -66,6 +66,8 @@ interface Props {
   canWriteMemo: boolean;
   viewerRole: string;
   canSendReminder?: boolean;
+  canAssign?: boolean;
+  canCollaborate?: boolean;
 }
 
 export default function V2InsideStaffBoard({
@@ -77,6 +79,8 @@ export default function V2InsideStaffBoard({
   canWriteMemo,
   viewerRole,
   canSendReminder = false,
+  canAssign = false,
+  canCollaborate = false,
 }: Props) {
   const [detailTarget, setDetailTarget] = useState<V2CustomerDetailRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -320,6 +324,8 @@ export default function V2InsideStaffBoard({
         <V2DetailActionPanel
           row={detailTarget}
           users={users}
+          canAssign={canAssign}
+          canCollaborate={canCollaborate}
           canSendReminder={canSendReminder}
           onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
           onAssigned={(patch) => applyAssignment(detailTarget.id, patch)}

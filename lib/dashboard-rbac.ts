@@ -61,6 +61,12 @@ export interface DashboardPermissions {
 
   canChangePartnerLineage: boolean;
 
+  /** 담당자 배정 · 바통 터치 · 독촉 */
+  canAssignLead: boolean;
+
+  /** 보상금·수임료 등 재무 UI */
+  canViewFinancialData: boolean;
+
 }
 
 
@@ -230,6 +236,10 @@ export function getDashboardPermissions(role: DashboardTestRole): DashboardPermi
 
         canChangePartnerLineage: true,
 
+        canAssignLead: true,
+
+        canViewFinancialData: true,
+
       };
 
     case "대표노무사":
@@ -252,6 +262,10 @@ export function getDashboardPermissions(role: DashboardTestRole): DashboardPermi
 
         canChangePartnerLineage: false,
 
+        canAssignLead: true,
+
+        canViewFinancialData: true,
+
       };
 
     case "총괄파트너":
@@ -273,6 +287,10 @@ export function getDashboardPermissions(role: DashboardTestRole): DashboardPermi
         canAssignAttorney: false,
 
         canChangePartnerLineage: true,
+
+        canAssignLead: true,
+
+        canViewFinancialData: true,
 
       };
 
@@ -298,6 +316,10 @@ export function getDashboardPermissions(role: DashboardTestRole): DashboardPermi
 
         canChangePartnerLineage: false,
 
+        canAssignLead: false,
+
+        canViewFinancialData: false,
+
       };
 
     case "노무사":
@@ -320,6 +342,10 @@ export function getDashboardPermissions(role: DashboardTestRole): DashboardPermi
 
         canChangePartnerLineage: false,
 
+        canAssignLead: true,
+
+        canViewFinancialData: true,
+
       };
 
     case "일반팀원":
@@ -341,6 +367,10 @@ export function getDashboardPermissions(role: DashboardTestRole): DashboardPermi
         canAssignAttorney: false,
 
         canChangePartnerLineage: false,
+
+        canAssignLead: false,
+
+        canViewFinancialData: false,
 
       };
 

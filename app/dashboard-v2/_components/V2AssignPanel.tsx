@@ -4,16 +4,8 @@ import { useState, useTransition } from "react";
 import { Loader2, UserPlus } from "lucide-react";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import type { V2CustomerDetailRow } from "../_lib/v2-customer-detail";
+import { filterV2AssignableUsers } from "@/lib/v2-assignable-users";
 import { assignLeadUser } from "../_actions/assignment";
-
-const ROLE_LABEL: Record<string, string> = {
-  관리자: "관리자",
-  노무사: "노무사",
-  대표노무사: "대표노무사",
-  총괄공식파트너: "총괄파트너",
-  총판영업자: "공식파트너",
-  하위영업자: "제휴파트너",
-};
 
 interface Props {
   row: V2CustomerDetailRow;
@@ -32,11 +24,7 @@ export default function V2AssignPanel({ row, users, onAssigned }: Props) {
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  const assignableUsers = users.filter((u) =>
-    ["관리자", "노무사", "대표노무사", "총판영업자", "하위영업자", "총괄공식파트너"].includes(
-      u.role as string,
-    ),
-  );
+  const assignableUsers = filterV2AssignableUsers(users);
 
   const handleSave = () => {
     if (!selectedUserId) {
@@ -87,7 +75,7 @@ export default function V2AssignPanel({ row, users, onAssigned }: Props) {
             <option value="">선택하세요</option>
             {assignableUsers.map((u) => (
               <option key={u.id} value={u.id}>
-                {u.name} ({ROLE_LABEL[u.role as string] ?? u.role})
+                {u.name}
               </option>
             ))}
           </select>

@@ -117,7 +117,9 @@ export default function V2UnifiedManagementDashboard({
   }, [enrichedUsers, simulation.effectiveViewerId, adminAgentId]);
 
   const myTasksOnly = shouldUseV2MyTasksView(currentUserRole);
-  const canSendReminder = !myTasksOnly;
+  const canSendReminder = !myTasksOnly && permissions.canAssignLead;
+  const canAssign = permissions.canAssignLead;
+  const canCollaborate = permissions.canAssignLead;
 
   return (
     <div className={cn("min-h-screen", V2_PAGE_BG)}>
@@ -215,6 +217,7 @@ export default function V2UnifiedManagementDashboard({
             statusCount={overviewStats.statusCount}
             intakeAgentId={intakeAgentId}
             currentUserRole={currentUserRole}
+            canViewFinancialData={permissions.canViewFinancialData}
           />
         )}
 
@@ -227,11 +230,11 @@ export default function V2UnifiedManagementDashboard({
               <div className="min-w-0 flex-1">
                 <h2 className="font-bold text-slate-900 text-sm tracking-tight">접수된 고객(DB) 관리</h2>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  {currentUserRole === "일반팀원"
-                    ? "3인 협업 보드 — 내 할 일 · 현장 · 노무사 구역"
-                    : permissions.canChangeLeadStatus || permissions.canWriteConsultMemo
-                      ? "진행 상태 변경 · 상담 메모 · 바통 터치"
-                      : "열람 전용 — 진행 상황 확인"}
+                  {permissions.canChangeLeadStatus || permissions.canWriteConsultMemo
+                    ? currentUserRole === "일반팀원"
+                      ? "3인 협업 보드 — 내 할 일 · 현장 · 노무사 구역"
+                      : "진행 상태 변경 · 상담 메모 · 담당자 배정"
+                    : "본인 유입 건만 열람 — 상태·배정·재무 정보는 표시되지 않습니다"}
                 </p>
               </div>
               {!permissions.canChangeLeadStatus && !permissions.canWriteConsultMemo && (
@@ -252,6 +255,8 @@ export default function V2UnifiedManagementDashboard({
               canWriteMemo={permissions.canWriteConsultMemo}
               canDelete={permissions.canDeleteLeads}
               canSendReminder={canSendReminder}
+              canAssign={canAssign}
+              canCollaborate={canCollaborate}
             />
           </div>
         )}

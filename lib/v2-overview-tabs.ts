@@ -1,5 +1,7 @@
 import type { LeadDetail } from "@/lib/lead-detail";
 import { normalizeV2LeadStatus, V2_LEAD_STATUS_OPTIONS } from "@/lib/v2-lead-status";
+import type { DashboardTestRole } from "@/lib/dashboard-rbac";
+import { isV2ExternalPartnerRole } from "@/lib/v2-partner-access";
 
 export const V2_OVERVIEW_TAB_IDS = [
   "summary",
@@ -35,6 +37,14 @@ export function parseV2OverviewHashTab(hash: string): V2OverviewTabId {
 
 export function buildV2OverviewHash(tab: V2OverviewTabId): string {
   return `#tab=${tab}`;
+}
+
+/** 파트너 열람 전용 — 재무·수임료 탭 숨김 */
+export function getV2OverviewTabsForRole(role: DashboardTestRole): V2OverviewTabId[] {
+  if (isV2ExternalPartnerRole(role)) {
+    return ["summary", "schedule", "faq"];
+  }
+  return [...V2_OVERVIEW_TAB_IDS];
 }
 
 const IN_PROGRESS_STATUSES = new Set<string>([
