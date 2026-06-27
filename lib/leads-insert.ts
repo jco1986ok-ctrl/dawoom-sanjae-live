@@ -7,10 +7,9 @@ import {
 import { resolveReferrerForInsert } from "@/lib/capture-referrer";
 import type { LeadSubmitPayload } from "@/lib/map-dynamic-form-to-lead";
 import { resolveDiseaseCategoryForInsert } from "@/lib/disease-category";
-import { V2_LEAD_STATUS_DEFAULT } from "@/lib/v2-lead-status";
 
-/** 환자 공개 접수 기본값 — DB enum에 항상 존재하는 레거시 값 */
-const LEAD_INTAKE_FALLBACK_STATUS = "신규";
+/** 환자 공개 접수 기본값 — DB enum에 항상 존재 (V2 마이그레이션과 무관) */
+const LEAD_INTAKE_DEFAULT_STATUS = "신규";
 
 const CATEGORY_LABEL: Record<string, string> = {
   ear: "귀 질환 (이명·난청)",
@@ -51,6 +50,105 @@ export interface InsertLeadError {
     code?: string;
     hint?: string;
     details?: string;
+    attempts?: string[];
+  };
+}
+
+function formatInsertError(error: { message?: string; code?: string; details?: string; hint?: string } | null): string {
+  return [error?.message, error?.details, error?.hint].filter(Boolean).join(" — ") || "알 수 없는 오류";
+}
+
+function buildLeadInsertCandidates(
+  insertPayload: Record<string, unknown>,
+  extras: { diseaseCategory?: string; pdfUrl?: string | null } = {},
+): Record<string, unknown>[] {
+  const seen = new Set<string>();
+  const candidates: Record<string, unknown>[] = [];
+
+  const push = (payload: Record<string, unknown>) => {
+    const key = JSON.stringify(payload);
+    if (seen.has(key)) return;
+    seen.add(key);
+    candidates.push(payload);
+  };
+
+  const core = {
+    customer_name: insertPayload.customer_name,
+    phone: insertPayload.phone,
+    disease_name: insertPayload.disease_name,
+    consultation_status: insertPayload.consultation_status,
+    notes: insertPayload.notes ?? null,
+  };
+
+  const withReferral = {
+    ...core,
+    referral_source: insertPayload.referral_source ?? null,
+    referred_by_user_id: insertPayload.referred_by_user_id ?? null,
+    master_agent_id: insertPayload.master_agent_id ?? null,
+  };
+
+  const withCategory = extras.diseaseCategory
+    ? { ...withReferral, disease_category: extras.diseaseCategory }
+    : null;
+
+  const withPdf =
+    extras.pdfUrl != null && extras.pdfUrl !== ""
+      ? { ...(withCategory ?? withReferral), pdf_url: extras.pdfUrl }
+      : null;
+
+  // DB에 없을 수 있는 컬럼(referrer, disease_category, pdf_url)은 제외한 payload부터 시도
+  push(core);
+  push(withReferral);
+  if (withCategory) push(withCategory);
+  if (withPdf) push(withPdf);
+  push(insertPayload);
+
+  const {
+    referred_by_user_id: _r,
+    master_agent_id: _m,
+    ...withoutAgentIds
+  } = insertPayload;
+  push(withoutAgentIds);
+
+  return candidates;
+}
+
+async function insertLeadWithFallback(
+  supabase: SupabaseClient,
+  insertPayload: Record<string, unknown>,
+  extras: { diseaseCategory?: string; pdfUrl?: string | null } = {},
+): Promise<
+  | { success: true; leadId: string }
+  | { success: false; error: string; debug: InsertLeadError["debug"] }
+> {
+  const candidates = buildLeadInsertCandidates(insertPayload, extras);
+  const attempts: string[] = [];
+  let lastError: { message?: string; code?: string; details?: string; hint?: string } | null = null;
+
+  for (const payload of candidates) {
+    const { data, error } = await supabase
+      .from("leads")
+      .insert(payload)
+      .select("id")
+      .single();
+
+    if (!error && data?.id) {
+      return { success: true, leadId: data.id as string };
+    }
+
+    lastError = error;
+    attempts.push(formatInsertError(error));
+  }
+
+  return {
+    success: false,
+    error: `데이터 저장 실패: ${formatInsertError(lastError)}`,
+    debug: {
+      code: lastError?.code,
+      hint: lastError?.hint,
+      details: lastError?.details,
+      attempts,
+    },
   };
 }
 
@@ -114,6 +212,10 @@ export async function insertLeadFromPayload(
   }
 
   const noteLines: string[] = [];
+  const referrerValue = resolveReferrerForInsert(
+    referrer ? String(referrer) : refCodeStr || null,
+  );
+  noteLines.push(`[추천인] ${referrerValue}`);
   if (refCodeStr) {
     noteLines.push(`[유입 링크] ?ref=${refCodeStr}`);
   } else if (partnerNameStr) {
@@ -163,18 +265,12 @@ export async function insertLeadFromPayload(
   const notes = noteLines.length > 0 ? noteLines.join("\n") : null;
   const diseaseCategory = resolveDiseaseCategoryForInsert(categoryStr, notes);
 
-  const referrerValue = resolveReferrerForInsert(
-    referrer ? String(referrer) : refCodeStr || null,
-  );
-
   const insertPayload: Record<string, unknown> = {
     customer_name: String(name).trim(),
     phone: String(phone).trim(),
     disease_name: diseaseName,
-    disease_category: diseaseCategory,
-    consultation_status: V2_LEAD_STATUS_DEFAULT,
+    consultation_status: LEAD_INTAKE_DEFAULT_STATUS,
     referral_source: resolvedReferralSource,
-    referrer: referrerValue,
     referred_by_user_id: referredByUserId,
     master_agent_id: masterAgentId,
     notes,
@@ -184,63 +280,10 @@ export async function insertLeadFromPayload(
     insertPayload.pdf_url = pdfUrl;
   }
 
-  let { data: inserted, error: insertError } = await supabase
-    .from("leads")
-    .insert(insertPayload)
-    .select("id")
-    .single();
-
-  if (insertError && /referrer/i.test(insertError.message ?? "")) {
-    const { referrer: _omit, ...withoutReferrer } = insertPayload;
-    ({ data: inserted, error: insertError } = await supabase
-      .from("leads")
-      .insert(withoutReferrer)
-      .select("id")
-      .single());
-  }
-
-  if (insertError && /pdf_url/i.test(insertError.message ?? "")) {
-    const { pdf_url: _omit, ...withoutPdf } = insertPayload;
-    ({ data: inserted, error: insertError } = await supabase
-      .from("leads")
-      .insert(withoutPdf)
-      .select("id")
-      .single());
-  }
-
-  if (insertError && /disease_category/i.test(insertError.message ?? "")) {
-    const { disease_category: _omit, ...withoutCategory } = insertPayload;
-    ({ data: inserted, error: insertError } = await supabase
-      .from("leads")
-      .insert(withoutCategory)
-      .select("id")
-      .single());
-  }
-
-  if (
-    insertError &&
-    /lead_status|enum|invalid input value/i.test(insertError.message ?? "")
-  ) {
-    ({ data: inserted, error: insertError } = await supabase
-      .from("leads")
-      .insert({ ...insertPayload, consultation_status: LEAD_INTAKE_FALLBACK_STATUS })
-      .select("id")
-      .single());
-  }
-
-  if (insertError || !inserted?.id) {
-    return {
-      success: false,
-      error: `데이터 저장 실패: ${insertError?.message ?? "알 수 없는 오류"}`,
-      debug: {
-        code: insertError?.code,
-        hint: insertError?.hint,
-        details: insertError?.details,
-      },
-    };
-  }
-
-  return { success: true, leadId: inserted.id as string };
+  return insertLeadWithFallback(supabase, insertPayload, {
+    diseaseCategory,
+    pdfUrl: pdfUrl ?? null,
+  });
 }
 
 export async function updateLeadContractPdf(
