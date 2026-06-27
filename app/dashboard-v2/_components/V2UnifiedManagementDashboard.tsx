@@ -5,6 +5,7 @@ import {
   FileText,
   Building2,
   ChevronDown,
+  ClipboardList,
   FlaskConical,
   LayoutDashboard,
 } from "lucide-react";
@@ -30,17 +31,18 @@ import V2OverviewPanel from "./V2OverviewPanel";
 import V2CustomerCollaborationSection from "./V2CustomerCollaborationSection";
 import V2DailyBriefingModal from "./V2DailyBriefingModal";
 import V2NotificationToastListener from "./V2NotificationToastListener";
-import V2MyBoardNavLink from "./V2MyBoardNavLink";
+import V2MyBoardTabPanel from "./V2MyBoardTabPanel";
 import { shouldUseV2MyTasksView } from "@/lib/v2-my-tasks";
 import { V2_PAGE_BG, v2SurfaceCard } from "../_lib/v2-ui";
 import { cn } from "@/lib/utils";
 
-type TabId = "overview" | "customers" | "partners";
+type TabId = "overview" | "customers" | "partners" | "myboard";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "종합 요약", icon: <LayoutDashboard className="w-4 h-4" /> },
   { id: "customers", label: "고객(DB) 상담 관리", icon: <FileText className="w-4 h-4" /> },
   { id: "partners", label: "파트너 조직 관리", icon: <Building2 className="w-4 h-4" /> },
+  { id: "myboard", label: "내 업무 보드", icon: <ClipboardList className="w-4 h-4" /> },
 ];
 
 interface Props {
@@ -144,7 +146,15 @@ export default function V2UnifiedManagementDashboard({
             </div>
 
             <div className="shrink-0 self-start sm:self-auto flex flex-col items-stretch sm:items-end gap-3">
-              <V2MyBoardNavLink variant="hero" />
+              <button
+                type="button"
+                onClick={() => setActiveTab("myboard")}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold
+                  bg-white text-[#0f2d5e] shadow-md hover:bg-blue-50 transition-colors whitespace-nowrap"
+              >
+                <ClipboardList className="w-4 h-4 shrink-0" />
+                내 업무 보드
+              </button>
               {canUseRoleTest && <AdminPdfCalibrateButton />}
               {canUseRoleTest && (
                 <label className="flex flex-col gap-1.5">
@@ -209,7 +219,6 @@ export default function V2UnifiedManagementDashboard({
               {tab.label}
             </button>
           ))}
-          <V2MyBoardNavLink />
         </div>
 
         {activeTab === "overview" && (
@@ -277,6 +286,14 @@ export default function V2UnifiedManagementDashboard({
             canDeleteUsers={permissions.canDeleteUsers}
             parentPartnerOptions={parentPartnerOptions}
             headerAction={null}
+          />
+        )}
+
+        {activeTab === "myboard" && (
+          <V2MyBoardTabPanel
+            leads={leads}
+            users={enrichedUsers}
+            viewerUserId={simulation.effectiveViewerId}
           />
         )}
       </div>

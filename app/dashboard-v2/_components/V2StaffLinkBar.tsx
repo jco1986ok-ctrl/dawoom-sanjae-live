@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { getSiteUrl } from "@/lib/site-url";
 import InviteLinkQrModal from "@/app/dashboard/_components/InviteLinkQrModal";
 import { copyV2ShareLink, requireAgentId } from "../_lib/v2-link-copy";
 import { cn } from "@/lib/utils";
-import { V2_MY_BOARD_ROUTE } from "@/lib/v2-my-board-route";
 
 const copyButtonClass =
   "inline-flex flex-1 items-center justify-center py-2 px-4 text-sm font-medium rounded-lg " +
@@ -112,15 +110,9 @@ export default function V2StaffLinkBar({ agentId, urgentCount = 0, staleCount = 
           </div>
         </div>
 
-        <div className="mt-3 pt-3 border-t border-blue-100">
-          <Link
-            href={V2_MY_BOARD_ROUTE}
-            className="flex w-full items-center justify-center gap-2 py-3 px-4 text-sm font-bold rounded-xl
-              bg-[#0f2d5e] text-white hover:bg-[#0a2248] transition-colors shadow-sm"
-          >
-            📋 내 업무 보드 — 칸반으로 업무 관리
-          </Link>
-        </div>
+        <p className="mt-3 pt-3 border-t border-blue-100 text-center text-xs font-semibold text-[#0f2d5e]">
+          📋 칸반 업무 관리 → 상단 탭 「내 업무 보드」
+        </p>
       </div>
 
       <InviteLinkQrModal

@@ -1,4 +1,5 @@
 import { BOARD_URLS } from "@/config/dashboard-boards";
+import { V2_BUILD_TAG } from "@/lib/v2-build-tag";
 
 export default function V2SandboxBanner() {
   return (
@@ -21,7 +22,9 @@ export default function V2SandboxBanner() {
         </span>
       </p>
       <p className="mt-1.5 text-xs text-violet-600/90">
-        DB는 프로덕션과 공유됩니다. status·컬럼 변경은 Supabase SQL 선행 후 테스트하세요.
+        URL이 <strong className="font-semibold">{BOARD_URLS.v2Dashboard}</strong> 인지 확인하세요.
+        빌드 <code className="font-mono bg-violet-100 px-1 rounded">{V2_BUILD_TAG}</code> · DB는
+        프로덕션과 공유됩니다.
       </p>
     </div>
   );
