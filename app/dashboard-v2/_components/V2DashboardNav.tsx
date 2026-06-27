@@ -58,13 +58,14 @@ export default function V2DashboardNav({ user }: { user: AppUser }) {
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Link
             href="/my-board"
-            className={`hidden sm:inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors shrink-0
+            className={`inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-full border transition-colors shrink-0 max-w-[9rem] sm:max-w-none
               ${onMyBoard
                 ? "bg-[#0f2d5e] text-white border-[#0f2d5e]"
                 : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
               }`}
+            title="내 업무 보드"
           >
-            📋 내 업무 보드
+            <span className="truncate">📋 내 업무 보드</span>
           </Link>
           <DashboardBoardSwitchCompact userRole={user.role} />
           <DashboardBoardSwitch userRole={user.role} />

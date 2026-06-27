@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   FileText,
   Building2,
   ChevronDown,
+  ClipboardList,
   FlaskConical,
   LayoutDashboard,
 } from "lucide-react";
@@ -190,7 +192,7 @@ export default function V2UnifiedManagementDashboard({
           </div>
         )}
 
-        <div className={cn(v2SurfaceCard(), "p-1.5 flex gap-1.5 overflow-x-auto")}>
+        <div className={cn(v2SurfaceCard(), "p-1.5 flex gap-1.5 overflow-x-auto scrollbar-hide")}>
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -207,6 +209,14 @@ export default function V2UnifiedManagementDashboard({
               {tab.label}
             </button>
           ))}
+          <Link
+            href="/my-board"
+            className="flex-1 min-w-[max-content] min-h-[44px] flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-colors whitespace-nowrap
+              text-slate-500 hover:text-slate-800 hover:bg-slate-50 border border-dashed border-slate-200"
+          >
+            <ClipboardList className="w-4 h-4" />
+            📋 내 업무 보드
+          </Link>
         </div>
 
         {activeTab === "overview" && (
