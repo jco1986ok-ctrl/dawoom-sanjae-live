@@ -44,7 +44,12 @@ export async function proxy(request: NextRequest) {
 
     const { pathname } = request.nextUrl;
 
-    if ((pathname.startsWith("/dashboard") || pathname.startsWith("/dashboard-v2")) && !user) {
+    if (
+      (pathname.startsWith("/dashboard") ||
+        pathname.startsWith("/dashboard-v2") ||
+        pathname.startsWith("/my-board")) &&
+      !user
+    ) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/login";
       loginUrl.searchParams.set("next", pathname);
@@ -71,5 +76,14 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/dashboard-v2", "/dashboard-v2/:path*", "/login", "/signup", "/auth/callback"],
+  matcher: [
+    "/dashboard/:path*",
+    "/dashboard-v2",
+    "/dashboard-v2/:path*",
+    "/my-board",
+    "/my-board/:path*",
+    "/login",
+    "/signup",
+    "/auth/callback",
+  ],
 };

@@ -52,6 +52,7 @@ export async function updateMyBoardLeadStatus(
 
   if (error) return { success: false, error: error.message };
 
+  revalidatePath("/dashboard-v2/my-board");
   revalidatePath("/my-board");
   revalidatePath("/dashboard-v2");
   revalidatePath("/dashboard");
@@ -95,6 +96,7 @@ export async function handoffMyBoardLead(
 
   if (error) return { success: false, error: error.message };
 
+  revalidatePath("/dashboard-v2/my-board");
   revalidatePath("/my-board");
   revalidatePath("/dashboard-v2");
   revalidatePath("/dashboard");

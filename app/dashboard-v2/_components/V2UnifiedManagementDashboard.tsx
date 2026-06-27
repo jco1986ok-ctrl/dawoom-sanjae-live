@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   FileText,
   Building2,
   ChevronDown,
-  ClipboardList,
   FlaskConical,
   LayoutDashboard,
 } from "lucide-react";
@@ -32,6 +30,7 @@ import V2OverviewPanel from "./V2OverviewPanel";
 import V2CustomerCollaborationSection from "./V2CustomerCollaborationSection";
 import V2DailyBriefingModal from "./V2DailyBriefingModal";
 import V2NotificationToastListener from "./V2NotificationToastListener";
+import V2MyBoardNavLink from "./V2MyBoardNavLink";
 import { shouldUseV2MyTasksView } from "@/lib/v2-my-tasks";
 import { V2_PAGE_BG, v2SurfaceCard } from "../_lib/v2-ui";
 import { cn } from "@/lib/utils";
@@ -145,6 +144,7 @@ export default function V2UnifiedManagementDashboard({
             </div>
 
             <div className="shrink-0 self-start sm:self-auto flex flex-col items-stretch sm:items-end gap-3">
+              <V2MyBoardNavLink variant="hero" />
               {canUseRoleTest && <AdminPdfCalibrateButton />}
               {canUseRoleTest && (
                 <label className="flex flex-col gap-1.5">
@@ -192,13 +192,13 @@ export default function V2UnifiedManagementDashboard({
           </div>
         )}
 
-        <div className={cn(v2SurfaceCard(), "p-1.5 flex gap-1.5 overflow-x-auto scrollbar-hide")}>
+        <div className={cn(v2SurfaceCard(), "p-1.5 flex flex-wrap gap-1.5")}>
           {TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-[max-content] min-h-[44px] flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-colors whitespace-nowrap
+              className={`shrink-0 min-h-[44px] flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-colors whitespace-nowrap
                 ${
                   activeTab === tab.id
                     ? "bg-[#0f2d5e] text-white shadow-sm"
@@ -209,14 +209,7 @@ export default function V2UnifiedManagementDashboard({
               {tab.label}
             </button>
           ))}
-          <Link
-            href="/my-board"
-            className="flex-1 min-w-[max-content] min-h-[44px] flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-colors whitespace-nowrap
-              text-slate-500 hover:text-slate-800 hover:bg-slate-50 border border-dashed border-slate-200"
-          >
-            <ClipboardList className="w-4 h-4" />
-            📋 내 업무 보드
-          </Link>
+          <V2MyBoardNavLink />
         </div>
 
         {activeTab === "overview" && (

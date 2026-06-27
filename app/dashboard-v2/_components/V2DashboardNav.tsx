@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut, User } from "lucide-react";
 import type { AppUser } from "@/lib/types";
@@ -11,6 +10,8 @@ import DashboardBoardSwitch, {
 import ParoLogo, { PARO_GREETING } from "@/components/ParoLogo";
 import { DASHBOARD_SHELL_X } from "@/app/dashboard/_components/dashboard-list-layout";
 import V2NotificationBell from "./V2NotificationBell";
+import V2MyBoardNavLink from "./V2MyBoardNavLink";
+import { V2_MY_BOARD_ROUTE } from "@/lib/v2-my-board-route";
 
 const ROLE_LABEL: Record<string, string> = {
   총괄공식파트너: "총괄 파트너",
@@ -33,7 +34,7 @@ const ROLE_COLOR: Record<string, string> = {
 /** V2 샌드박스 전용 헤더 — 알림 벨·라이브 대시보드 링크만 여기에 둠 */
 export default function V2DashboardNav({ user }: { user: AppUser }) {
   const pathname = usePathname();
-  const onMyBoard = pathname?.startsWith("/my-board");
+  const onMyBoard = pathname?.startsWith(V2_MY_BOARD_ROUTE);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -56,17 +57,14 @@ export default function V2DashboardNav({ user }: { user: AppUser }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <Link
-            href="/my-board"
-            className={`inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-full border transition-colors shrink-0 max-w-[9rem] sm:max-w-none
-              ${onMyBoard
-                ? "bg-[#0f2d5e] text-white border-[#0f2d5e]"
-                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-              }`}
-            title="내 업무 보드"
-          >
-            <span className="truncate">📋 내 업무 보드</span>
-          </Link>
+          <V2MyBoardNavLink
+            variant="hero"
+            className={`!text-xs !py-1.5 !px-2 sm:!px-3 !rounded-full !shadow-none border ${
+              onMyBoard
+                ? "!bg-[#0f2d5e] !text-white !border-[#0f2d5e]"
+                : "!bg-white !text-slate-700 !border-slate-200 hover:!bg-slate-50"
+            }`}
+          />
           <DashboardBoardSwitchCompact userRole={user.role} />
           <DashboardBoardSwitch userRole={user.role} />
 
