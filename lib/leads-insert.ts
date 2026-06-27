@@ -9,6 +9,9 @@ import type { LeadSubmitPayload } from "@/lib/map-dynamic-form-to-lead";
 import { resolveDiseaseCategoryForInsert } from "@/lib/disease-category";
 import { V2_LEAD_STATUS_DEFAULT } from "@/lib/v2-lead-status";
 
+/** 환자 공개 접수 기본값 — DB enum에 항상 존재하는 레거시 값 */
+const LEAD_INTAKE_FALLBACK_STATUS = "신규";
+
 const CATEGORY_LABEL: Record<string, string> = {
   ear: "귀 질환 (이명·난청)",
   joint: "관절/허리 질환 (디스크 등)",
@@ -210,6 +213,17 @@ export async function insertLeadFromPayload(
     ({ data: inserted, error: insertError } = await supabase
       .from("leads")
       .insert(withoutCategory)
+      .select("id")
+      .single());
+  }
+
+  if (
+    insertError &&
+    /lead_status|enum|invalid input value/i.test(insertError.message ?? "")
+  ) {
+    ({ data: inserted, error: insertError } = await supabase
+      .from("leads")
+      .insert({ ...insertPayload, consultation_status: LEAD_INTAKE_FALLBACK_STATUS })
       .select("id")
       .single());
   }
