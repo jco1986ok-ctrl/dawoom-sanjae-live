@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LogOut, User } from "lucide-react";
 import type { AppUser } from "@/lib/types";
 import ChangePasswordModal from "@/app/dashboard/_components/ChangePasswordModal";
@@ -30,6 +32,9 @@ const ROLE_COLOR: Record<string, string> = {
 
 /** V2 샌드박스 전용 헤더 — 알림 벨·라이브 대시보드 링크만 여기에 둠 */
 export default function V2DashboardNav({ user }: { user: AppUser }) {
+  const pathname = usePathname();
+  const onMyBoard = pathname?.startsWith("/my-board");
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.replace("/login");
@@ -51,6 +56,16 @@ export default function V2DashboardNav({ user }: { user: AppUser }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <Link
+            href="/my-board"
+            className={`hidden sm:inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors shrink-0
+              ${onMyBoard
+                ? "bg-[#0f2d5e] text-white border-[#0f2d5e]"
+                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+              }`}
+          >
+            📋 내 업무 보드
+          </Link>
           <DashboardBoardSwitchCompact userRole={user.role} />
           <DashboardBoardSwitch userRole={user.role} />
 

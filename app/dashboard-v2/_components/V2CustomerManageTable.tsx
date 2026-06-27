@@ -66,6 +66,8 @@ interface Props {
   users?: AdminUserListItem[];
   viewerUserId?: string;
   myTasksOnly?: boolean;
+  /** 공식·제휴 파트너 — 본인 소개 고객 열람 전용 */
+  partnerReferredView?: boolean;
   /** 노무사 배당 건만 클라이언트에서 재조회 */
   assignedTo?: string;
   /** false면 부모에서 스코핑한 leads만 사용 */
@@ -89,6 +91,7 @@ export default function V2CustomerManageTable({
   users = [],
   viewerUserId = "",
   myTasksOnly = false,
+  partnerReferredView = false,
   assignedTo,
   clientRefetch = true,
   viewerRole = "",
@@ -363,6 +366,11 @@ export default function V2CustomerManageTable({
               내 업무 {scopedRows.length}건
             </span>
           )}
+          {partnerReferredView && (
+            <span className="inline-flex items-center gap-1 text-violet-700 font-semibold mr-2">
+              내 소개 고객 {scopedRows.length}건
+            </span>
+          )}
           {filteredRows.length}건 표시
           {filteredRows.length !== rows.length && ` (전체 ${rows.length}건)`}
           {totalPages > 1 && ` · ${safePage}/${totalPages}페이지`}
@@ -377,9 +385,11 @@ export default function V2CustomerManageTable({
           <p className="text-sm">
             {myTasksOnly
               ? "나에게 배정된 업무가 없습니다."
-              : "선택한 필터에 해당하는 고객이 없습니다."}
+              : partnerReferredView
+                ? "본인 소개 고객이 없습니다."
+                : "선택한 필터에 해당하는 고객이 없습니다."}
           </p>
-          {!myTasksOnly && (
+          {!myTasksOnly && !partnerReferredView && (
             <button
               type="button"
               onClick={() => handleQuickFilter("all")}

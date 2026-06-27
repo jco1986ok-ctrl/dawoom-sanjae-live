@@ -233,5 +233,7 @@ export function filterLeadsForAnalytics(
 ): LeadDetail[] {
   if (tier === "executive") return leads;
   if (tier === "partner") return filterLeadsByLine(leads, viewerId, testRole, users);
-  return leads.filter((l) => l.assigned_to === viewerId);
+  return leads.filter(
+    (l) => l.assigned_user_id === viewerId || l.assigned_to === viewerId,
+  );
 }

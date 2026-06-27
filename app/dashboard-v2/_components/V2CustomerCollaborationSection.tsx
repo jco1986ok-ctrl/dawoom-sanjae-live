@@ -3,7 +3,7 @@
 import type { LeadDetail } from "@/lib/lead-detail";
 import type { DashboardTestRole } from "@/lib/dashboard-rbac";
 import type { AdminUserListItem } from "@/lib/user-lineage";
-import { shouldUseV2MyTasksView } from "@/lib/v2-my-tasks";
+import { shouldUseV2MyTasksView, isV2PartnerReferredLeadsView } from "@/lib/v2-my-tasks";
 import V2CustomerManageTable from "./V2CustomerManageTable";
 import V2InsideStaffBoard from "./V2InsideStaffBoard";
 
@@ -40,6 +40,7 @@ export default function V2CustomerCollaborationSection({
 }: Props) {
   const isInsideStaffView = currentUserRole === "일반팀원";
   const myTasksOnly = shouldUseV2MyTasksView(currentUserRole);
+  const partnerReferredView = isV2PartnerReferredLeadsView(currentUserRole);
 
   if (isInsideStaffView) {
     return (
@@ -64,6 +65,7 @@ export default function V2CustomerCollaborationSection({
       users={users}
       viewerUserId={viewerUserId}
       myTasksOnly={myTasksOnly}
+      partnerReferredView={partnerReferredView}
       assignedTo={assignedTo}
       clientRefetch={clientRefetch}
       viewerRole={viewerRole}
