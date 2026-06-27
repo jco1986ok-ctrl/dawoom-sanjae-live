@@ -1,0 +1,69 @@
+---
+description: V2 샌드박스 → 라이브 승격 안정 개발 워크플로 (항상 적용)
+alwaysApply: true
+---
+
+# V2 샌드박스 개발 · 라이브 승격 워크플로
+
+## 한 프로젝트, 두 화면
+
+| 구역 | URL | 코드 | DB |
+|------|-----|------|-----|
+| V2 시연 | `/dashboard-v2` | `app/dashboard-v2/**` | 프로덕션 Supabase (공유) |
+| 라이브 | `/dashboard` | `app/dashboard/**` | 동일 |
+| 환자 접수 | `/` | `app/api/leads/**` | 동일 — **특히 조심** |
+
+경계 정의: `config/dashboard-boards.ts`
+
+## 기본 원칙
+
+1. **기능 실험은 V2만** — `app/dashboard-v2/**`, `lib/v2-*.ts`
+2. **라이브는 승인 후만** — 사용자가 "테스트보드 통과, 라이브에도 적용"이라고 할 때만 `app/dashboard/**`
+3. **접수·공유 API는 V2와 분리 커밋** — `lib/leads-insert.ts`, `lib/intake-safe-defaults.ts`, `app/api/leads/**`
+4. **V2 status는 접수 INSERT에 쓰지 않음** — 접수 기본값은 `신규` (`lib/intake-safe-defaults.ts`)
+5. **DB SQL은 코드보다 먼저** — Supabase SQL Editor에 **SQL 내용** 실행 (파일 경로 X)
+
+## Git 브랜치
+
+- `main` — 프로덕션
+- `feature/v2-<기능>` — V2 개발·시연
+- `promote/live-<기능>` — V2 승인 후 라이브 반영
+- `fix/intake-<설명>` — 접수 hotfix (V2와 섞지 않음)
+
+## 커밋 전 검사 (에이전트가 실행)
+
+```bash
+npm run check:board-status   # 변경 요약
+npm run check:v2-scope         # V2 커밋 — app/dashboard/** 금지
+npm run check:live-promote     # 라이브 승격 커밋 확인
+npm run promote:checklist      # 승격 전 체크리스트
+```
+
+## V2 배포
+
+1. `npm run check:v2-scope` 통과
+2. `npm run build` 통과
+3. 커밋 메시지에 `V2:` 접두사
+4. `git push origin main` (또는 feature 브랜치 → PR)
+
+확인 URL: https://pharos-sanjae.com/dashboard-v2
+
+## 라이브 승격
+
+사용자 명시 지시 예: "테스트보드 통과. ○○를 라이브 대시보드에도 적용해줘"
+
+1. `npm run promote:checklist` 항목 확인
+2. `app/dashboard/**`에만 반영 (V2 파일 복사·연결)
+3. `npm run check:live-promote`
+4. `/dashboard`에서 QA
+
+## Cursor 대화 시작 시 (사용자에게 권장)
+
+- V2만: "이번엔 V2 테스트보드만, 라이브/접수 건드리지 마"
+- 승격: "V2에서 통과한 ○○를 라이브 대시보드에 적용"
+- 접수: "접수 hotfix만, V2/라이브 UI 건드리지 마"
+
+## 공유 컴포넌트
+
+V2가 `app/dashboard/_components/*`를 import하는 것은 허용.  
+**라이브 파일을 수정하지 말고**, 필요 시 `app/dashboard-v2/_components/V2*.tsx`로 래핑·복제.

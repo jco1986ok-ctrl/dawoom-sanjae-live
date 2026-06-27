@@ -5,6 +5,8 @@ alwaysApply: true
 
 # V2 테스트보드 우선 · 라이브 대시보드 보호
 
+> 전체 워크플로: `.cursor/rules/v2-sandbox-workflow.mdc` · 검사: `npm run check:v2-scope`
+
 ## 기본 원칙
 
 - 프로그램(기능·UI) 수정은 **무조건 테스트보드(`/dashboard-v2`, `app/dashboard-v2/`)에만** 적용한다.

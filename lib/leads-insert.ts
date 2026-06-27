@@ -7,9 +7,7 @@ import {
 import { resolveReferrerForInsert } from "@/lib/capture-referrer";
 import type { LeadSubmitPayload } from "@/lib/map-dynamic-form-to-lead";
 import { resolveDiseaseCategoryForInsert } from "@/lib/disease-category";
-
-/** 환자 공개 접수 기본값 — DB enum에 항상 존재 (V2 마이그레이션과 무관) */
-const LEAD_INTAKE_DEFAULT_STATUS = "신규";
+import { LEAD_INTAKE_DEFAULT_STATUS } from "@/lib/intake-safe-defaults";
 
 const CATEGORY_LABEL: Record<string, string> = {
   ear: "귀 질환 (이명·난청)",
