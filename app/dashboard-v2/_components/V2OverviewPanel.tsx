@@ -240,7 +240,7 @@ export default function V2OverviewPanel({
         <div role="tabpanel">
           <V2OverviewTabPanels
             tab={activeTab}
-            leads={leads}
+            leads={displayLeads}
             users={users}
             canViewFinancialData={canViewFinancialData}
           />

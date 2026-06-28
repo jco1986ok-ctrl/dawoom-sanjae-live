@@ -160,11 +160,19 @@ export function computeTopPartners(
 export function getLineReferredByIds(
   viewerId: string,
   testRole: DashboardTestRole,
-  _users: AdminUserListItem[],
+  users: AdminUserListItem[],
 ): Set<string> {
-  /** 외부 파트너(공식·제휴): 본인 유입(referred_by_user_id) 건만 */
-  if (testRole === "제휴파트너" || testRole === "공식파트너") {
+  if (testRole === "제휴파트너") {
     return new Set([viewerId]);
+  }
+
+  if (testRole === "공식파트너") {
+    const partnerRows = users.map((u) => ({
+      id: u.id,
+      role: u.role,
+      parent_agent_id: u.parent_agent_id,
+    }));
+    return collectPartnerSubtreeIds(viewerId, partnerRows);
   }
 
   return new Set([viewerId]);

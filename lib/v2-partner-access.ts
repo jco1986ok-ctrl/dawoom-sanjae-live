@@ -23,6 +23,11 @@ export function canUseV2CustomerDbFilters(role: DashboardTestRole): boolean {
   return (V2_CUSTOMER_DB_FILTER_ROLES as readonly string[]).includes(role);
 }
 
+/** AI 상담 요약·노무사 메모 타임라인 — 내부 직원 전용 */
+export function canViewV2InternalConsultSummary(role: DashboardTestRole): boolean {
+  return !isV2ExternalPartnerRole(role);
+}
+
 /** 유입 파트너(referred_by_user_id)가 본인인 접수만 */
 export function filterLeadsReferredByViewer(
   leads: LeadDetail[],

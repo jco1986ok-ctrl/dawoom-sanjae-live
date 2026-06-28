@@ -39,10 +39,10 @@ export function buildV2OverviewHash(tab: V2OverviewTabId): string {
   return `#tab=${tab}`;
 }
 
-/** 파트너 열람 전용 — 재무·수임료 탭 숨김 */
+/** 파트너 열람 전용 — 내부 상담 요약·재무·수임료 탭 숨김 */
 export function getV2OverviewTabsForRole(role: DashboardTestRole): V2OverviewTabId[] {
   if (isV2ExternalPartnerRole(role)) {
-    return ["summary", "schedule", "faq"];
+    return ["schedule", "faq"];
   }
   return [...V2_OVERVIEW_TAB_IDS];
 }
