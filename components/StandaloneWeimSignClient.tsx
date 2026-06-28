@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import { ParoBrandHeader } from "@/components/ParoLogo";
+import ParoLogo from "@/components/ParoLogo";
 import SignaturePadField, { type SignaturePadHandle } from "@/components/SignaturePadField";
 import {
   WeimSignCustomerInfoForm,
@@ -15,6 +15,17 @@ import {
 import type { WeimCustomerInfoInput } from "@/lib/merge-lead-weim-info";
 
 type Step = "loading" | "info" | "sign" | "not_found" | "already_signed" | "success" | "error";
+
+function WeimBrandHeader() {
+  return (
+    <div className="flex items-center justify-center gap-1.5">
+      <ParoLogo size={16} />
+      <span className="text-[12px] font-semibold text-[#8B95A1] tracking-wider">
+        질병산재 전문 노무법인 파로스
+      </span>
+    </div>
+  );
+}
 
 export function StandaloneWeimSignClient({ leadId }: { leadId: string }) {
   const [step, setStep] = useState<Step>("loading");
@@ -186,7 +197,7 @@ export function StandaloneWeimSignClient({ leadId }: { leadId: string }) {
     return (
       <>
         <header className="px-5 pt-5 pb-2 max-w-md mx-auto">
-          <ParoBrandHeader />
+          <WeimBrandHeader />
         </header>
         <WeimSignCustomerInfoForm
           customerName={customerName}
@@ -209,7 +220,7 @@ export function StandaloneWeimSignClient({ leadId }: { leadId: string }) {
   return (
     <div className="flex flex-col min-h-[100dvh] bg-white">
       <header className="px-5 pt-5 pb-2">
-        <ParoBrandHeader />
+        <WeimBrandHeader />
       </header>
 
       <main className="flex-1 px-5 pt-4 pb-32">

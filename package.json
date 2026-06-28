@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/create-pwa-assets.mjs && node scripts/create-og-image.mjs",
+    "prebuild": "node scripts/create-pwa-assets.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
