@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import type { WeimCustomerInfoInput } from "@/lib/merge-lead-weim-info";
-import { loadDaumPostcodeScript } from "@/lib/daum-postcode";
 import {
-  DaumAddressSearchOverlay,
+  loadDaumPostcodeScript,
+  openDaumAddressLayer,
   pickDaumAddressBase,
-} from "@/components/DaumAddressSearchOverlay";
+} from "@/lib/daum-postcode";
 
 const INPUT =
   "w-full min-w-0 px-4 py-3.5 rounded-2xl bg-white text-[#191F28] text-[15px] tracking-[-0.02em] shadow-[0_4px_16px_rgba(0,0,0,0.04)] border border-transparent focus:border-[#3182F6] focus:outline-none";
@@ -106,16 +107,29 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
   const [addressDetail, setAddressDetail] = useState(prefill.detail);
   const [consentPersonalInfo, setConsentPersonalInfo] = useState(false);
   const [consentUniqueId, setConsentUniqueId] = useState(false);
-  const [postcodeOpen, setPostcodeOpen] = useState(false);
+  const [postcodeLoading, setPostcodeLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void loadDaumPostcodeScript().catch(() => {});
   }, []);
 
-  const handleAddressSearch = () => {
+  const handleAddressSearch = async () => {
     setError(null);
-    setPostcodeOpen(true);
+    setPostcodeLoading(true);
+    try {
+      await openDaumAddressLayer((data) => {
+        if (data.zonecode) setZonecode(data.zonecode);
+        const base = pickDaumAddressBase(data);
+        if (base) setAddressBase(base);
+      });
+    } catch {
+      setError(
+        "주소 검색을 열지 못했습니다. 카카오톡·네이버 앱이면 ··· 메뉴에서 Safari·Chrome으로 열어 주세요.",
+      );
+    } finally {
+      setPostcodeLoading(false);
+    }
   };
 
   const handleRrnBackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,10 +234,18 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
             </label>
             <button
               type="button"
-              onClick={handleAddressSearch}
-              className="w-full mb-2 py-3.5 rounded-2xl bg-[#3182F6] text-white font-bold text-[15px] tracking-[-0.02em] active:scale-[0.98] transition-transform shadow-[0_4px_14px_rgba(49,130,246,0.28)]"
+              disabled={postcodeLoading}
+              onClick={() => void handleAddressSearch()}
+              className="w-full mb-2 py-3.5 rounded-2xl bg-[#3182F6] text-white font-bold text-[15px] tracking-[-0.02em] active:scale-[0.98] transition-transform shadow-[0_4px_14px_rgba(49,130,246,0.28)] disabled:opacity-60 inline-flex items-center justify-center gap-2"
             >
-              주소 검색
+              {postcodeLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  주소 검색 여는 중…
+                </>
+              ) : (
+                "주소 검색"
+              )}
             </button>
             <input
               type="text"
@@ -316,16 +338,6 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
           </button>
         </div>
       </div>
-
-      <DaumAddressSearchOverlay
-        open={postcodeOpen}
-        onClose={() => setPostcodeOpen(false)}
-        onSelect={(data) => {
-          if (data.zonecode) setZonecode(data.zonecode);
-          const base = pickDaumAddressBase(data);
-          if (base) setAddressBase(base);
-        }}
-      />
     </div>
   );
 }
