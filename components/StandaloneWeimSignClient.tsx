@@ -8,6 +8,10 @@ import {
   WeimSignCustomerInfoForm,
   type WeimSignCustomerInfoFormValue,
 } from "@/components/WeimSignCustomerInfoForm";
+import {
+  AddressSearchBottomSheet,
+  type AddressSearchResult,
+} from "@/components/AddressSearchBottomSheet";
 import type { WeimCustomerInfoInput } from "@/lib/merge-lead-weim-info";
 
 type Step = "loading" | "info" | "sign" | "not_found" | "already_signed" | "success" | "error";
@@ -20,6 +24,11 @@ export function StandaloneWeimSignClient({ leadId }: { leadId: string }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [hasSignature, setHasSignature] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [postcodeOpen, setPostcodeOpen] = useState(false);
+  const addressPickRef = useRef<(result: AddressSearchResult) => void>(() => {});
+  const bindAddressPick = useCallback((pick: (result: AddressSearchResult) => void) => {
+    addressPickRef.current = pick;
+  }, []);
   const sigRef = useRef<SignaturePadHandle>(null);
 
   const loadState = useCallback(async () => {
@@ -176,13 +185,20 @@ export function StandaloneWeimSignClient({ leadId }: { leadId: string }) {
   if (step === "info") {
     return (
       <>
-        <header className="px-5 pt-5 pb-2">
+        <header className="px-5 pt-5 pb-2 max-w-md mx-auto">
           <ParoBrandHeader />
         </header>
         <WeimSignCustomerInfoForm
           customerName={customerName}
           prefillAddress={prefillAddress}
           onSubmit={handleInfoSubmit}
+          onAddressSearch={() => setPostcodeOpen(true)}
+          onBindAddressPick={bindAddressPick}
+        />
+        <AddressSearchBottomSheet
+          open={postcodeOpen}
+          onClose={() => setPostcodeOpen(false)}
+          onComplete={(result) => addressPickRef.current(result)}
         />
       </>
     );

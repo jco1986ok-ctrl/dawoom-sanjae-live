@@ -13,7 +13,7 @@ export default async function StandaloneWeimSignPage({
 }) {
   const { id } = await params;
   return (
-    <div className="min-h-[100dvh] bg-white max-w-md mx-auto">
+    <div className="min-h-[100dvh] bg-white">
       <StandaloneWeimSignClient leadId={id} />
     </div>
   );

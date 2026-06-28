@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { WeimCustomerInfoInput } from "@/lib/merge-lead-weim-info";
-import { AddressSearchBottomSheet } from "@/components/AddressSearchBottomSheet";
+import type { AddressSearchResult } from "@/components/AddressSearchBottomSheet";
 
 const INPUT =
   "w-full min-w-0 px-4 py-3.5 rounded-2xl bg-white text-[#191F28] text-[15px] tracking-[-0.02em] shadow-[0_4px_16px_rgba(0,0,0,0.04)] border border-transparent focus:border-[#3182F6] focus:outline-none";
@@ -91,9 +91,17 @@ interface Props {
   customerName: string;
   prefillAddress?: string;
   onSubmit: (value: WeimSignCustomerInfoFormValue) => void;
+  onAddressSearch: () => void;
+  onBindAddressPick: (pick: (result: AddressSearchResult) => void) => void;
 }
 
-export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmit }: Props) {
+export function WeimSignCustomerInfoForm({
+  customerName,
+  prefillAddress,
+  onSubmit,
+  onAddressSearch,
+  onBindAddressPick,
+}: Props) {
   const prefill = splitPrefillAddress(prefillAddress);
   const [residentNumberFront, setResidentNumberFront] = useState("");
   const [residentNumberBack, setResidentNumberBack] = useState("");
@@ -102,12 +110,19 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
   const [addressDetail, setAddressDetail] = useState(prefill.detail);
   const [consentPersonalInfo, setConsentPersonalInfo] = useState(false);
   const [consentUniqueId, setConsentUniqueId] = useState(false);
-  const [postcodeOpen, setPostcodeOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    onBindAddressPick((result) => {
+      if (result.zonecode) setZonecode(result.zonecode);
+      const base = result.roadAddress || result.address;
+      if (base) setAddressBase(base);
+    });
+  }, [onBindAddressPick]);
 
   const handleAddressSearch = () => {
     setError(null);
-    setPostcodeOpen(true);
+    onAddressSearch();
   };
 
   const handleRrnBackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,8 +177,7 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
   const displayName = customerName.trim() || "고객";
 
   return (
-    <>
-      <div className="flex flex-col min-h-[100dvh] bg-white">
+    <div className="flex flex-col min-h-[100dvh] bg-white max-w-md mx-auto w-full">
       <main className="flex-1 px-5 pt-4 pb-32">
         <h1 className="text-[22px] font-bold text-[#191F28] leading-[1.45] tracking-[-0.03em]">
           안녕하세요 {displayName}님,
@@ -295,6 +309,7 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
           {error && (
             <p className="text-[13px] text-red-500 font-medium tracking-[-0.02em]">{error}</p>
           )}
+          <p className="text-[10px] text-[#D1D5DB] text-center pt-2">sign-postcode-v4</p>
         </div>
       </main>
 
@@ -309,17 +324,6 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
           </button>
         </div>
       </div>
-      </div>
-
-      <AddressSearchBottomSheet
-        open={postcodeOpen}
-        onClose={() => setPostcodeOpen(false)}
-        onComplete={(result) => {
-          if (result.zonecode) setZonecode(result.zonecode);
-          const base = result.roadAddress || result.address;
-          if (base) setAddressBase(base);
-        }}
-      />
-    </>
+    </div>
   );
 }
