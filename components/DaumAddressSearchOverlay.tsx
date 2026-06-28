@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import DaumPostcode from "react-daum-postcode";
 
 export type DaumPostcodeResult = {
@@ -12,6 +12,10 @@ export type DaumPostcodeResult = {
   roadAddress: string;
   jibunAddress: string;
 };
+
+/** embed 컨테이너 고정 높이 — % 높이는 부모 레이아웃 전 0px이 되어 빈 화면 발생 */
+const EMBED_HEIGHT =
+  "calc(100svh - 3.25rem - 4.25rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))";
 
 export function pickDaumAddressBase(result: DaumPostcodeResult): string {
   return result.roadAddress || result.jibunAddress || result.address || "";
@@ -29,6 +33,7 @@ type Props = {
  */
 export function DaumAddressSearchOverlay({ open, onClose, onSelect }: Props) {
   const [mounted, setMounted] = useState(false);
+  const [embedReady, setEmbedReady] = useState(false);
   const [embedKey, setEmbedKey] = useState(0);
 
   useEffect(() => {
@@ -36,12 +41,16 @@ export function DaumAddressSearchOverlay({ open, onClose, onSelect }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setEmbedReady(false);
+      return;
+    }
     setEmbedKey((k) => k + 1);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
+      setEmbedReady(false);
     };
   }, [open]);
 
@@ -50,6 +59,10 @@ export function DaumAddressSearchOverlay({ open, onClose, onSelect }: Props) {
   const handleComplete = (result: DaumPostcodeResult) => {
     onSelect(result);
     window.setTimeout(onClose, 120);
+  };
+
+  const handlePanelAnimationComplete = () => {
+    if (open) setEmbedReady(true);
   };
 
   return createPortal(
@@ -78,12 +91,13 @@ export function DaumAddressSearchOverlay({ open, onClose, onSelect }: Props) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.32 }}
+            onAnimationComplete={handlePanelAnimationComplete}
             className="relative z-10 flex w-full flex-col bg-white shadow-2xl
-              h-[100dvh] max-h-[100dvh]
-              sm:h-[min(85dvh,720px)] sm:max-w-lg sm:rounded-3xl sm:overflow-hidden"
+              h-[100svh] max-h-[100svh]
+              sm:h-auto sm:max-w-lg sm:rounded-3xl sm:overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <header className="flex shrink-0 items-center justify-between border-b border-[#EEF0F3] px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <header className="flex h-[3.25rem] shrink-0 items-center justify-between border-b border-[#EEF0F3] px-4 pt-[env(safe-area-inset-top)]">
               <p className="text-[16px] font-bold text-[#191F28] tracking-[-0.02em]">주소 검색</p>
               <button
                 type="button"
@@ -96,22 +110,29 @@ export function DaumAddressSearchOverlay({ open, onClose, onSelect }: Props) {
             </header>
 
             <div
-              className="flex-1 min-h-0 w-full"
-              style={{ minHeight: "calc(100dvh - 8.5rem)" }}
+              className="relative w-full overflow-hidden bg-white"
+              style={{ height: EMBED_HEIGHT, minHeight: 320 }}
             >
-              <DaumPostcode
-                key={embedKey}
-                autoClose={false}
-                style={{ width: "100%", height: "100%", minHeight: 360 }}
-                onComplete={handleComplete}
-              />
+              {!embedReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#3182F6]" />
+                </div>
+              )}
+              {embedReady && (
+                <DaumPostcode
+                  key={embedKey}
+                  autoClose={false}
+                  style={{ width: "100%", height: EMBED_HEIGHT, minHeight: 320 }}
+                  onComplete={handleComplete}
+                />
+              )}
             </div>
 
-            <footer className="shrink-0 border-t border-[#EEF0F3] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <footer className="flex h-[4.25rem] shrink-0 items-center border-t border-[#EEF0F3] px-4 pb-[env(safe-area-inset-bottom)]">
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full rounded-2xl border border-[#E5E8EB] bg-[#F9FAFB] py-3.5 text-[15px] font-semibold text-[#4E5968]"
+                className="w-full rounded-2xl border border-[#E5E8EB] bg-[#F9FAFB] py-3 text-[15px] font-semibold text-[#4E5968]"
               >
                 닫기
               </button>
