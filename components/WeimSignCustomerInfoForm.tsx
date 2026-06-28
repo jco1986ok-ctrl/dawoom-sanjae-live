@@ -162,7 +162,8 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
   const displayName = customerName.trim() || "고객";
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-white">
+    <>
+      <div className="flex flex-col min-h-[100dvh] bg-white">
       <main className="flex-1 px-5 pt-4 pb-32">
         <h1 className="text-[22px] font-bold text-[#191F28] leading-[1.45] tracking-[-0.03em]">
           안녕하세요 {displayName}님,
@@ -308,6 +309,7 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
           </button>
         </div>
       </div>
+      </div>
 
       <AddressSearchBottomSheet
         open={postcodeOpen}
@@ -318,6 +320,6 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
           if (base) setAddressBase(base);
         }}
       />
-    </div>
+    </>
   );
 }

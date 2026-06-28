@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import DaumPostcode from "react-daum-postcode";
 
@@ -18,33 +17,42 @@ type Props = {
   onComplete: (result: AddressSearchResult) => void;
 };
 
-/** 고객접수폼(DynamicForm)과 동일한 주소 검색 바텀시트 */
+/**
+ * 고객접수폼(DynamicForm ContactScreen)과 동일 — portal 없이 fixed 바텀시트.
+ * embed는 슬라이드 애니메이션 완료 후 + 픽셀 높이로 마운트 (빈 화면 방지).
+ */
 export function AddressSearchBottomSheet({ open, onClose, onComplete }: Props) {
-  const [mounted, setMounted] = useState(false);
+  const [embedReady, setEmbedReady] = useState(false);
+  const [embedHeightPx, setEmbedHeightPx] = useState(400);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setEmbedReady(false);
+      return;
+    }
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
+      setEmbedReady(false);
     };
   }, [open]);
 
-  if (!mounted) return null;
+  const handlePanelAnimationComplete = () => {
+    if (!open) return;
+    const px = Math.max(320, Math.floor(window.innerHeight * 0.85 - 57));
+    setEmbedHeightPx(px);
+    setEmbedReady(true);
+  };
 
-  return createPortal(
+  return (
     <AnimatePresence>
       {open && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-end justify-center"
+          className="fixed inset-0 z-[9999] flex items-end justify-center"
         >
           <button
             type="button"
@@ -57,9 +65,10 @@ export function AddressSearchBottomSheet({ open, onClose, onComplete }: Props) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "tween", ease: [0.32, 0.72, 0, 1], duration: 0.28 }}
+            onAnimationComplete={handlePanelAnimationComplete}
             className="relative z-10 w-full max-w-md h-[85vh] bg-white rounded-t-3xl overflow-hidden flex flex-col"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#F2F4F6]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#F2F4F6] shrink-0">
               <p className="text-[16px] font-bold text-[#191F28] tracking-[-0.02em]">주소 검색</p>
               <button
                 type="button"
@@ -69,19 +78,24 @@ export function AddressSearchBottomSheet({ open, onClose, onComplete }: Props) {
                 닫기
               </button>
             </div>
-            <div className="flex-1 min-h-0">
-              <DaumPostcode
-                style={{ width: "100%", height: "100%" }}
-                onComplete={(result) => {
-                  onComplete(result);
-                  onClose();
-                }}
-              />
+            <div
+              className="w-full shrink-0 overflow-hidden"
+              style={{ height: embedHeightPx }}
+            >
+              {embedReady && (
+                <DaumPostcode
+                  key={embedHeightPx}
+                  style={{ width: "100%", height: embedHeightPx }}
+                  onComplete={(result) => {
+                    onComplete(result);
+                    onClose();
+                  }}
+                />
+              )}
             </div>
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>,
-    document.body,
+    </AnimatePresence>
   );
 }
