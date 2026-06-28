@@ -56,7 +56,6 @@ import { deleteLead } from "@/app/dashboard/_actions/leads";
 import V2AssignPanel from "./V2AssignPanel";
 import V2ProcessingAssignSelect from "./V2ProcessingAssignSelect";
 import { buildV2CustomerDetailRow, type V2CustomerDetailRow } from "../_lib/v2-customer-detail";
-import type { CollaborationOwnerRole } from "@/lib/collaboration-workflow";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import { markLeadAssignmentRead } from "../_actions/assignment";
 import { getV2AgingRowClass, isLeadAgingStale } from "@/lib/v2-task-aging";
@@ -90,8 +89,6 @@ interface Props {
   canDelete?: boolean;
   /** 담당자 배정 */
   canAssign?: boolean;
-  /** 바통 터치(협업 구역 이동) */
-  canCollaborate?: boolean;
 }
 
 export default function V2CustomerManageTable({
@@ -109,7 +106,6 @@ export default function V2CustomerManageTable({
   canWriteMemo = true,
   canDelete = false,
   canAssign = false,
-  canCollaborate = false,
 }: Props) {
   const showDocsMatrix = canViewDocumentsMatrix(viewerRole);
   const docsInteractive = showDocsMatrix;
@@ -251,15 +247,6 @@ export default function V2CustomerManageTable({
         syncRowData(latest.id, { isRead: true });
       });
     }
-  };
-
-  const applyOwnerRole = (leadId: string, role: CollaborationOwnerRole) => {
-    setRows((prev) =>
-      prev.map((r) => (r.id === leadId ? { ...r, currentOwnerRole: role } : r)),
-    );
-    setDetailTarget((prev) =>
-      prev?.id === leadId ? { ...prev, currentOwnerRole: role } : prev,
-    );
   };
 
   const applyAssignment = (

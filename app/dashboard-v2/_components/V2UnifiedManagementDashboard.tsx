@@ -121,7 +121,6 @@ export default function V2UnifiedManagementDashboard({
 
   const myTasksOnly = shouldUseV2MyTasksView(currentUserRole);
   const canAssign = permissions.canAssignLead;
-  const canCollaborate = permissions.canAssignLead;
 
   return (
     <div className={cn("min-h-screen", V2_PAGE_BG)}>
@@ -264,7 +263,6 @@ export default function V2UnifiedManagementDashboard({
               canWriteMemo={permissions.canWriteConsultMemo}
               canDelete={permissions.canDeleteLeads}
               canAssign={canAssign}
-              canCollaborate={canCollaborate}
             />
           </div>
         )}

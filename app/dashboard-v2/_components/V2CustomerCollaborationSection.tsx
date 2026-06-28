@@ -18,9 +18,10 @@ interface Props {
   canChangeStatus: boolean;
   canWriteMemo: boolean;
   canDelete: boolean;
-  /** @deprecated 독촉 기능 제거 — 라이브 호환용, 무시됨 */
-  canSendReminder?: boolean;
   canAssign?: boolean;
+  /** @deprecated 라이브 호환 — 무시 */
+  canSendReminder?: boolean;
+  /** @deprecated 라이브 호환 — 무시 */
   canCollaborate?: boolean;
 }
 
@@ -36,7 +37,6 @@ export default function V2CustomerCollaborationSection({
   canWriteMemo,
   canDelete,
   canAssign = false,
-  canCollaborate = false,
 }: Props) {
   const myTasksOnly = shouldUseV2MyTasksView(currentUserRole);
   const partnerReferredView = isV2PartnerReferredLeadsView(currentUserRole);
@@ -58,7 +58,6 @@ export default function V2CustomerCollaborationSection({
       canWriteMemo={canWriteMemo}
       canDelete={canDelete}
       canAssign={canAssign}
-      canCollaborate={canCollaborate}
     />
   );
 }
