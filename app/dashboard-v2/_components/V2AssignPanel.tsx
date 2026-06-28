@@ -6,10 +6,12 @@ import type { AdminUserListItem } from "@/lib/user-lineage";
 import type { V2CustomerDetailRow } from "../_lib/v2-customer-detail";
 import { filterV2ProcessingHandlerUsers } from "@/lib/v2-assignable-users";
 import { assignLeadUser } from "../_actions/assignment";
+import { cn } from "@/lib/utils";
 
 interface Props {
   row: V2CustomerDetailRow;
   users: AdminUserListItem[];
+  embedded?: boolean;
   onAssigned: (patch: {
     assignedUserId: string;
     assignedUserName: string;
@@ -18,7 +20,7 @@ interface Props {
   }) => void;
 }
 
-export default function V2AssignPanel({ row, users, onAssigned }: Props) {
+export default function V2AssignPanel({ row, users, embedded = false, onAssigned }: Props) {
   const [selectedUserId, setSelectedUserId] = useState(row.assignedUserId ?? "");
   const [memo, setMemo] = useState("");
   const [error, setError] = useState("");
@@ -50,7 +52,7 @@ export default function V2AssignPanel({ row, users, onAssigned }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
+    <div className={cn("flex flex-col gap-3", !embedded && "pt-4 border-t border-slate-100")}>
       <div className="flex items-center gap-2">
         <UserPlus className="w-4 h-4 text-[#0f2d5e]" />
         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">

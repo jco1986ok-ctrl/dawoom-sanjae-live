@@ -111,6 +111,8 @@ interface Props {
   /** V2 등 — 기본 LeadStatusSelect 대체용 */
   StatusSelectComponent?: React.ComponentType<CustomerDetailStatusSelectProps>;
   StatusBadgeComponent?: React.ComponentType<{ status: string }>;
+  /** 모달 하단 고정 영역 (처리 담당자 배정 등) */
+  footer?: React.ReactNode;
 }
 
 export type CustomerDetailStatusSelectProps = {
@@ -137,6 +139,7 @@ export function CustomerDetailModal({
   onDiseaseCategoryUpdated,
   StatusSelectComponent,
   StatusBadgeComponent,
+  footer,
 }: Props) {
   const StatusSelect = StatusSelectComponent ?? LeadStatusSelect;
   const StatusBadge = StatusBadgeComponent ?? LeadStatusBadge;
@@ -253,7 +256,7 @@ export function CustomerDetailModal({
         className="p-0 gap-0 overflow-hidden flex flex-col
           max-sm:top-0 max-sm:left-0 max-sm:translate-x-0 max-sm:translate-y-0
           max-sm:max-w-full max-sm:w-full max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:rounded-none
-          sm:max-w-4xl lg:max-w-5xl sm:max-h-[90vh]"
+          sm:max-w-4xl lg:max-w-6xl sm:max-h-[90vh]"
       >
         {/* 헤더 + 닫기 */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white shrink-0">
@@ -307,6 +310,8 @@ export function CustomerDetailModal({
           )}
         </div>
 
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          {mobileTab !== "documents" && (
         <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
           {/* 좌측: 기본 정보 & 상태 */}
           <div
@@ -433,22 +438,6 @@ export function CustomerDetailModal({
                 />
               </div>
 
-              {showDocumentsTab && (
-                <CustomerDocumentsBlock
-                  row={row}
-                  docsStatus={docsStatus}
-                  docFiles={docFiles}
-                  otherDocs={otherDocs}
-                  showAdminDocPanel={showAdminDocPanel}
-                  showDocumentsReadOnly={showDocumentsReadOnly}
-                  showWeimSignLink={showWeimSignLink}
-                  canDownloadContract={canDownloadContract}
-                  hasContractPdf={hasContractPdf}
-                  onDocsUpdated={handleDocsUpdated}
-                  onOtherDocsUpdated={handleOtherDocsUpdated}
-                />
-              )}
-
               {canDownloadContract && hasContractPdf && !showDocumentsTab && (
                 <div className="pt-2 border-t border-slate-100">
                   <ContractPdfPreviewBlock
@@ -535,15 +524,12 @@ export function CustomerDetailModal({
               </div>
             )}
           </div>
+          </div>
+          )}
 
-          {/* 서류 취합 전용 탭 (모바일·태블릿) */}
-          {showDocumentsTab && (
-            <div
-              className={cn(
-                "flex-1 overflow-y-auto bg-white min-h-0 lg:hidden",
-                mobileTab === "documents" ? "block" : "hidden",
-              )}
-            >
+          {/* 서류 취합 탭 — 탭 선택 시에만 표시 */}
+          {showDocumentsTab && mobileTab === "documents" && (
+            <div className="flex-1 overflow-y-auto bg-white min-h-0">
               <div className="p-5">
                 <CustomerDocumentsBlock
                   row={row}
@@ -562,6 +548,10 @@ export function CustomerDetailModal({
             </div>
           )}
         </div>
+
+        {footer && (
+          <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-4">{footer}</div>
+        )}
       </DialogContent>
     </Dialog>
   );

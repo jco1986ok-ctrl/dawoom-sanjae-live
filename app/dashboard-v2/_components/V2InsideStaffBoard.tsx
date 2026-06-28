@@ -13,7 +13,7 @@ import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import V2LeadStatusBadge from "./V2LeadStatusBadge";
 import { CustomerDetailModal, notesToComments } from "@/app/dashboard/_components/CustomerDetailModal";
 import { V2LeadStatusSelect } from "./V2LeadStatusSelect";
-import V2DetailActionPanel from "./V2DetailActionPanel";
+import V2AssignPanel from "./V2AssignPanel";
 import {
   buildV2CustomerDetailRow,
   type V2CustomerDetailRow,
@@ -318,19 +318,17 @@ export default function V2InsideStaffBoard({
         StatusBadgeComponent={V2LeadStatusBadge}
         onNotesUpdated={applyNotesUpdate}
         onStatusUpdated={applyStatusUpdate}
+        footer={
+          canAssign && detailTarget ? (
+            <V2AssignPanel
+              row={detailTarget}
+              users={users}
+              embedded
+              onAssigned={(patch) => applyAssignment(detailTarget.id, patch)}
+            />
+          ) : undefined
+        }
       />
-
-      {detailOpen && detailTarget && (
-        <V2DetailActionPanel
-          row={detailTarget}
-          users={users}
-          canAssign={canAssign}
-          canCollaborate={canCollaborate}
-          canSendReminder={canSendReminder}
-          onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
-          onAssigned={(patch) => applyAssignment(detailTarget.id, patch)}
-        />
-      )}
     </>
   );
 }

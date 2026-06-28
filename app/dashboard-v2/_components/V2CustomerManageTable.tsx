@@ -53,7 +53,7 @@ import { PartnerConfirmBadge } from "@/app/dashboard/_components/PartnerConfirmB
 import { BulkDocumentsDownloadButton } from "@/app/dashboard/_components/BulkDocumentsDownloadButton";
 import { DocCollectionProgressBadge, DocumentsWithProgress } from "@/app/dashboard/_components/DocCollectionProgressBadge";
 import { deleteLead } from "@/app/dashboard/_actions/leads";
-import V2DetailActionPanel from "./V2DetailActionPanel";
+import V2AssignPanel from "./V2AssignPanel";
 import V2ProcessingAssignSelect from "./V2ProcessingAssignSelect";
 import { buildV2CustomerDetailRow, type V2CustomerDetailRow } from "../_lib/v2-customer-detail";
 import type { CollaborationOwnerRole } from "@/lib/collaboration-workflow";
@@ -933,19 +933,17 @@ export default function V2CustomerManageTable({
         onDiseaseCategoryUpdated={(id, category) => {
           syncRowData(id, { diseaseCategory: category });
         }}
+        footer={
+          canAssign && detailTarget ? (
+            <V2AssignPanel
+              row={detailTarget}
+              users={users}
+              embedded
+              onAssigned={(patch) => applyAssignment(detailTarget.id, patch)}
+            />
+          ) : undefined
+        }
       />
-
-      {detailOpen && detailTarget && (
-        <V2DetailActionPanel
-          row={detailTarget}
-          users={users}
-          canAssign={canAssign}
-          canCollaborate={canCollaborate}
-          canSendReminder={canSendReminder}
-          onOwnerRoleUpdated={(role) => applyOwnerRole(detailTarget.id, role)}
-          onAssigned={(patch) => applyAssignment(detailTarget.id, patch)}
-        />
-      )}
     </>
   );
 }
