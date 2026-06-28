@@ -7,7 +7,6 @@ export type DaumPostcodeResult = {
 
 type PostcodeCtor = new (options: {
   oncomplete: (data: DaumPostcodeResult) => void;
-  onclose?: (state: "FORCE_CLOSE" | "COMPLETE_CLOSE") => void;
   width?: string | number;
   height?: string | number;
 }) => { open: () => void; embed: (el: HTMLElement) => void };
@@ -19,7 +18,6 @@ declare global {
   }
 }
 
-/** 공식 권장 CDN (구 t1.daumcdn.net 대체) */
 const SCRIPT_SRC = "https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
 const SCRIPT_ID = "kakao-postcode-v2";
 
@@ -35,7 +33,6 @@ export function loadDaumPostcodeScript(): Promise<void> {
   }
 
   if (getPostcodeConstructor()) return Promise.resolve();
-
   if (loadPromise) return loadPromise;
 
   loadPromise = new Promise((resolve, reject) => {
@@ -69,11 +66,11 @@ export function loadDaumPostcodeScript(): Promise<void> {
   return loadPromise;
 }
 
-/** 전체 화면 컨테이너에 embed — 모바일·인앱 브라우저에서 .open()보다 안정적 */
+/** 컨테이너에 embed — heightPx 필수 (모바일에서 % 높이는 0px 버그 유발) */
 export async function embedDaumAddressSearch(
   container: HTMLElement,
   onComplete: (result: DaumPostcodeResult) => void,
-  onClose?: () => void,
+  heightPx: number,
 ): Promise<void> {
   await loadDaumPostcodeScript();
 
@@ -82,32 +79,18 @@ export async function embedDaumAddressSearch(
     throw new Error("주소 검색을 초기화하지 못했습니다.");
   }
 
+  const height = Math.max(320, Math.floor(heightPx));
   container.replaceChildren();
+  container.style.width = "100%";
+  container.style.height = `${height}px`;
+  container.style.minHeight = `${height}px`;
+  container.style.overflow = "hidden";
 
   new Postcode({
     oncomplete: onComplete,
-    onclose: () => onClose?.(),
     width: "100%",
-    height: "100%",
+    height,
   }).embed(container);
-}
-
-/** @deprecated embed 방식 권장 */
-export async function openDaumAddressSearch(
-  onComplete: (result: DaumPostcodeResult) => void,
-): Promise<void> {
-  await loadDaumPostcodeScript();
-
-  const Postcode = getPostcodeConstructor();
-  if (!Postcode) {
-    throw new Error("주소 검색을 초기화하지 못했습니다.");
-  }
-
-  new Postcode({
-    oncomplete: onComplete,
-    width: "100%",
-    height: "100%",
-  }).open();
 }
 
 export function pickDaumAddressBase(result: DaumPostcodeResult): string {

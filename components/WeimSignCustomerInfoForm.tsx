@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { WeimCustomerInfoInput } from "@/lib/merge-lead-weim-info";
+import { loadDaumPostcodeScript } from "@/lib/daum-postcode";
 import {
   DaumAddressSearchOverlay,
   pickDaumAddressBase,
@@ -107,6 +108,10 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
   const [consentUniqueId, setConsentUniqueId] = useState(false);
   const [postcodeOpen, setPostcodeOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void loadDaumPostcodeScript().catch(() => {});
+  }, []);
 
   const handleAddressSearch = () => {
     setError(null);
