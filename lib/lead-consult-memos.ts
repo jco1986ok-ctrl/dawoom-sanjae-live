@@ -146,3 +146,27 @@ export function appendStatusChangeToNotes(
   const base = existing?.trim() ?? "";
   return base ? `${base}\n${line}` : line;
 }
+
+export function formatAssignmentSystemLog(
+  assigneeName: string,
+  memo: string | null | undefined,
+  at = new Date(),
+): string {
+  const y = at.getFullYear();
+  const mo = String(at.getMonth() + 1).padStart(2, "0");
+  const d = String(at.getDate()).padStart(2, "0");
+  const h = String(at.getHours()).padStart(2, "0");
+  const mi = String(at.getMinutes()).padStart(2, "0");
+  const detail = memo?.trim() ? ` — ${memo.trim()}` : "";
+  return `[시스템 로그 ${y}-${mo}-${d} ${h}:${mi}] 처리 담당자 배정: ${assigneeName}${detail}`;
+}
+
+export function appendAssignmentLogToNotes(
+  existing: string | null | undefined,
+  assigneeName: string,
+  memo: string | null | undefined,
+): string {
+  const line = formatAssignmentSystemLog(assigneeName, memo);
+  const base = existing?.trim() ?? "";
+  return base ? `${base}\n${line}` : line;
+}

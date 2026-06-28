@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Loader2, UserPlus } from "lucide-react";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import type { V2CustomerDetailRow } from "../_lib/v2-customer-detail";
-import { filterV2AssignableUsers } from "@/lib/v2-assignable-users";
+import { filterV2ProcessingHandlerUsers } from "@/lib/v2-assignable-users";
 import { assignLeadUser } from "../_actions/assignment";
 
 interface Props {
@@ -24,7 +24,7 @@ export default function V2AssignPanel({ row, users, onAssigned }: Props) {
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  const assignableUsers = filterV2AssignableUsers(users);
+  const assignableUsers = filterV2ProcessingHandlerUsers(users);
 
   const handleSave = () => {
     if (!selectedUserId) {
@@ -54,7 +54,7 @@ export default function V2AssignPanel({ row, users, onAssigned }: Props) {
       <div className="flex items-center gap-2">
         <UserPlus className="w-4 h-4 text-[#0f2d5e]" />
         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-          다음 담당자 배정
+          처리 담당자 배정
         </span>
         {row.assignedUserName && (
           <span className="text-[11px] text-slate-400 ml-auto">
@@ -65,7 +65,7 @@ export default function V2AssignPanel({ row, users, onAssigned }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-semibold text-slate-500">담당 직원</span>
+          <span className="text-[11px] font-semibold text-slate-500">처리 담당자</span>
           <select
             value={selectedUserId}
             onChange={(e) => setSelectedUserId(e.target.value)}

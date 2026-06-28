@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDashboardV2MasterRole } from "@/lib/dashboard-v2-access";
-import { isV2AssignableRole } from "@/lib/v2-assignable-users";
+import { isV2ProcessingHandlerRole } from "@/lib/v2-assignable-users";
+import { appendAssignmentLogToNotes } from "@/lib/lead-consult-memos";
 
 async function requireV2Access() {
   const supabase = await createClient();
@@ -49,20 +50,34 @@ export async function assignLeadUser(
     return { success: false, error: "선택한 담당자를 찾을 수 없습니다." };
   }
 
-  if (!isV2AssignableRole(assignee.role as string)) {
+  if (!isV2ProcessingHandlerRole(assignee.role as string)) {
     return {
       success: false,
-      error: "배정 가능한 직책(마스터·총괄파트너·대표노무사·노무사)만 담당자로 지정할 수 있습니다.",
+      error: "처리 담당자로 지정할 수 있는 직책(노무사·대표노무사)만 선택할 수 있습니다.",
     };
   }
 
   const trimmedMemo = memo.trim();
+  const { data: leadRow } = await admin
+    .from("leads")
+    .select("notes")
+    .eq("id", leadId)
+    .maybeSingle();
+
+  const nextNotes = appendAssignmentLogToNotes(
+    leadRow?.notes as string | null | undefined,
+    assignee.name as string,
+    trimmedMemo || null,
+  );
+
   const { error } = await admin
     .from("leads")
     .update({
       assigned_user_id: assignedUserId,
       assignment_memo: trimmedMemo || null,
       is_read: false,
+      notes: nextNotes,
+      last_updated_at: new Date().toISOString(),
     })
     .eq("id", leadId);
 
@@ -77,6 +92,8 @@ export async function assignLeadUser(
   }
 
   revalidatePath("/dashboard-v2");
+  revalidatePath("/dashboard-v2/my-board");
+  revalidatePath("/dashboard/my-board");
   return { success: true };
 }
 

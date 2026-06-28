@@ -54,6 +54,7 @@ import { BulkDocumentsDownloadButton } from "@/app/dashboard/_components/BulkDoc
 import { DocCollectionProgressBadge, DocumentsWithProgress } from "@/app/dashboard/_components/DocCollectionProgressBadge";
 import { deleteLead } from "@/app/dashboard/_actions/leads";
 import V2DetailActionPanel from "./V2DetailActionPanel";
+import V2ProcessingAssignSelect from "./V2ProcessingAssignSelect";
 import { buildV2CustomerDetailRow, type V2CustomerDetailRow } from "../_lib/v2-customer-detail";
 import type { CollaborationOwnerRole } from "@/lib/collaboration-workflow";
 import type { AdminUserListItem } from "@/lib/user-lineage";
@@ -175,7 +176,9 @@ export default function V2CustomerManageTable({
       if (!showDbFilters) return scopedRows;
       return scopedRows.filter(
         (r) =>
-          matchesV2CustomerQuickFilter(r.consultationStatus, quickFilter) &&
+          matchesV2CustomerQuickFilter(r.consultationStatus, quickFilter, {
+            assignedUserId: r.assignedUserId,
+          }) &&
           matchesV2DiseaseFilter(
             {
               diseaseCategory: r.diseaseCategory,
@@ -323,6 +326,7 @@ export default function V2CustomerManageTable({
   }
 
   const hasActionColumn = canDelete || (showDocsMatrix && docsInteractive);
+  const showProcessingHandler = !partnerReferredView;
 
   if (isLoading && rows.length === 0) {
     return (
@@ -521,6 +525,23 @@ export default function V2CustomerManageTable({
                     </div>
                   </div>
 
+                  {showProcessingHandler && (
+                    <div className="mt-2.5">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        처리 담당자
+                      </p>
+                      <V2ProcessingAssignSelect
+                        leadId={row.id}
+                        assignedUserId={row.assignedUserId}
+                        assignedUserName={row.assignedUserName}
+                        users={users}
+                        editable={canAssign}
+                        compact
+                        onAssigned={(patch) => applyAssignment(row.id, patch)}
+                      />
+                    </div>
+                  )}
+
                   <p className={MOBILE_CARD_FOOTER_META_CLASS}>
                     접수 {row.submittedAt}
                     {row.comments.length > 0 && (
@@ -597,6 +618,19 @@ export default function V2CustomerManageTable({
                   <FluidRowField label="유입 파트너" className="shrink-0">
                     <PartnerConfirmBadge onClick={() => openDetail(row)} />
                   </FluidRowField>
+                  {showProcessingHandler && (
+                    <FluidRowField label="처리 담당자" className="shrink-0 min-w-[120px]">
+                      <V2ProcessingAssignSelect
+                        leadId={row.id}
+                        assignedUserId={row.assignedUserId}
+                        assignedUserName={row.assignedUserName}
+                        users={users}
+                        editable={canAssign}
+                        compact
+                        onAssigned={(patch) => applyAssignment(row.id, patch)}
+                      />
+                    </FluidRowField>
+                  )}
                   <FluidRowField label="날짜" className="shrink-0 w-32">
                     <span className="text-slate-500 text-xs tabular-nums">{row.submittedAt}</span>
                   </FluidRowField>
@@ -691,11 +725,12 @@ export default function V2CustomerManageTable({
           <DesktopTableWrap>
             <table className={`${DESKTOP_TABLE_EL_CLASS} table-fixed`}>
               <colgroup>
-                <col style={{ width: "14%" }} />
+                <col style={{ width: "13%" }} />
+                <col style={{ width: "8%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "10%" }} />
+                {showProcessingHandler && <col style={{ width: "10%" }} />}
                 {showDocsMatrix && (
-                  <col style={{ width: `${hasActionColumn ? 42 : 50}%` }} />
+                  <col style={{ width: `${hasActionColumn ? 38 : 46}%` }} />
                 )}
                 {showDocsMatrix && <col style={{ width: "8%" }} />}
                 <col
@@ -718,6 +753,11 @@ export default function V2CustomerManageTable({
                   <th className="text-left py-3 px-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
                     유입 파트너
                   </th>
+                  {showProcessingHandler && (
+                    <th className="text-left py-3 px-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                      처리 담당자
+                    </th>
+                  )}
                   {showDocsMatrix && (
                     <th className="text-left py-3 px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                       취합 서류
@@ -765,6 +805,22 @@ export default function V2CustomerManageTable({
                     <td className="py-3 px-2 whitespace-nowrap align-middle">
                       <PartnerConfirmBadge onClick={() => openDetail(row)} />
                     </td>
+                    {showProcessingHandler && (
+                      <td
+                        className="py-3 px-2 align-middle"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <V2ProcessingAssignSelect
+                          leadId={row.id}
+                          assignedUserId={row.assignedUserId}
+                          assignedUserName={row.assignedUserName}
+                          users={users}
+                          editable={canAssign}
+                          compact
+                          onAssigned={(patch) => applyAssignment(row.id, patch)}
+                        />
+                      </td>
+                    )}
                     {showDocsMatrix && (
                       <td className="py-3 px-3 align-middle overflow-visible">
                         <DocumentsMatrixBadges

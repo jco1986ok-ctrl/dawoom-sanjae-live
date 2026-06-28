@@ -9,6 +9,12 @@ export const V2_ASSIGNEE_DB_ROLES: readonly UserRole[] = [
   "노무사",
 ] as const;
 
+/** 접수 건 처리 담당자 — 내 업무 보드에 표시될 실무 직원 */
+export const V2_PROCESSING_HANDLER_ROLES: readonly UserRole[] = [
+  "대표노무사",
+  "노무사",
+] as const;
+
 /** UI·문서용 별칭 (master → 관리자, 총괄파트너 → 총괄공식파트너) */
 const ASSIGNEE_ROLE_ALIASES: Record<string, UserRole> = {
   master: "관리자",
@@ -31,6 +37,20 @@ export function normalizeV2AssignableRole(role: string | null | undefined): User
 
 export function isV2AssignableRole(role: string | null | undefined): boolean {
   return normalizeV2AssignableRole(role) !== null;
+}
+
+export function isV2ProcessingHandlerRole(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return (V2_PROCESSING_HANDLER_ROLES as readonly string[]).includes(role.trim());
+}
+
+/** 처리 담당자 Select — 노무사·대표노무사, 이름 가나다순 */
+export function filterV2ProcessingHandlerUsers(
+  users: AdminUserListItem[],
+): AdminUserListItem[] {
+  return users
+    .filter((u) => u.is_active && isV2ProcessingHandlerRole(u.role))
+    .sort((a, b) => a.name.localeCompare(b.name, "ko"));
 }
 
 /** 담당자 Select — 활성 사용자 중 배정 가능 직책만, 이름 가나다순 */

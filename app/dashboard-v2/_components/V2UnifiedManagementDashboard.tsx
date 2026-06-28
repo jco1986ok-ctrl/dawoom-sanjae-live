@@ -245,7 +245,7 @@ export default function V2UnifiedManagementDashboard({
                   {permissions.canChangeLeadStatus || permissions.canWriteConsultMemo
                     ? currentUserRole === "일반팀원"
                       ? "3인 협업 보드 — 내 할 일 · 현장 · 노무사 구역"
-                      : "진행 상태 변경 · 상담 메모 · 담당자 배정"
+                      : "진행 상태 변경 · 처리 담당자 배정 · 상담 메모"
                     : "본인 유입 건만 열람 — 상태·배정·재무 정보는 표시되지 않습니다"}
                 </p>
               </div>

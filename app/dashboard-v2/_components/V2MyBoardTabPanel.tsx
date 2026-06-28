@@ -5,6 +5,8 @@ import { ClipboardList } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import { filterV2AssignableUsers } from "@/lib/v2-assignable-users";
+import { filterV2MyTaskLeads } from "@/lib/v2-my-tasks";
+import { sortV2AssigneeLeads } from "@/lib/v2-task-aging";
 import MyBoardKanban, { buildMyBoardCards } from "../my-board/_components/MyBoardKanban";
 
 interface Props {
@@ -16,7 +18,7 @@ interface Props {
 /** V2 탭 — 별도 라우트 없이 같은 페이지에서 칸반 표시 */
 export default function V2MyBoardTabPanel({ leads, users, viewerUserId }: Props) {
   const myLeads = useMemo(
-    () => leads.filter((lead) => lead.assigned_user_id === viewerUserId),
+    () => sortV2AssigneeLeads(filterV2MyTaskLeads(leads, viewerUserId)),
     [leads, viewerUserId],
   );
 
@@ -28,7 +30,7 @@ export default function V2MyBoardTabPanel({ leads, users, viewerUserId }: Props)
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 px-1">
         <div>
           <p className="text-sm text-muted-foreground">
-            나에게 배정된 사건을 칸반보드로 관리합니다. 카드를 드래그해 단계를 변경하고, 다음
+            처리 담당자로 배정된 접수 건이 여기에 표시됩니다. 칸반에서 단계를 변경하고 다음
             담당자에게 이관할 수 있습니다.
           </p>
         </div>

@@ -169,12 +169,21 @@ export function resolveSimulatedViewerContext(
       }
       break;
     }
-    case "노무사":
-    case "일반팀원": {
+    case "노무사": {
       const u = pickUser("노무사", testRole === loggedInTestRole && loggedInUser?.role === "노무사");
       if (u) {
         effectiveViewerId = u.id;
         effectiveViewerName = u.name;
+      }
+      break;
+    }
+    case "일반팀원": {
+      const staff =
+        users.find((x) => x.is_active && x.role === "노무사" && x.id !== effectiveViewerId) ??
+        users.find((x) => x.is_active && x.role === "노무사");
+      if (staff) {
+        effectiveViewerId = staff.id;
+        effectiveViewerName = staff.name;
       }
       break;
     }
