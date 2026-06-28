@@ -100,6 +100,7 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
   const prefill = splitPrefillAddress(prefillAddress);
   const [residentNumberFront, setResidentNumberFront] = useState("");
   const [residentNumberBack, setResidentNumberBack] = useState("");
+  const [zonecode, setZonecode] = useState("");
   const [addressBase, setAddressBase] = useState(prefill.base);
   const [addressDetail, setAddressDetail] = useState(prefill.detail);
   const [consentPersonalInfo, setConsentPersonalInfo] = useState(false);
@@ -222,9 +223,19 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
             <input
               type="text"
               readOnly
+              inputMode="numeric"
+              value={zonecode}
+              placeholder="우편번호"
+              className={`${INPUT} bg-[#F9FAFB] text-[#4E5968] mb-2 tabular-nums`}
+              aria-label="우편번호"
+            />
+            <input
+              type="text"
+              readOnly
               value={addressBase}
-              placeholder="주소 검색 버튼을 눌러주세요"
+              placeholder="도로명 주소 (주소 검색 버튼을 눌러주세요)"
               className={`${INPUT} bg-[#F9FAFB] text-[#4E5968] mb-2`}
+              aria-label="도로명 주소"
             />
             {addressBase.length > 0 && (
               <input
@@ -305,6 +316,7 @@ export function WeimSignCustomerInfoForm({ customerName, prefillAddress, onSubmi
         open={postcodeOpen}
         onClose={() => setPostcodeOpen(false)}
         onSelect={(data) => {
+          if (data.zonecode) setZonecode(data.zonecode);
           const base = pickDaumAddressBase(data);
           if (base) setAddressBase(base);
         }}
