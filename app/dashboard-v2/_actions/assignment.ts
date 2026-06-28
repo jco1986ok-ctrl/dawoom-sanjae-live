@@ -53,7 +53,7 @@ export async function assignLeadUser(
   if (!isV2ProcessingHandlerRole(assignee.role as string)) {
     return {
       success: false,
-      error: "처리 담당자로 지정할 수 있는 직책(노무사·대표노무사)만 선택할 수 있습니다.",
+      error: "배정 가능한 처리 담당자(마스터·총괄·대표노무사·노무사·일반팀원)만 선택할 수 있습니다.",
     };
   }
 

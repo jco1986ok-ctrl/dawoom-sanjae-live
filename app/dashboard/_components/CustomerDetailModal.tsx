@@ -75,6 +75,8 @@ export interface CustomerDetailRow {
   inflow?: InflowInfo | null;
   referralSource?: string | null;
   referrer?: string | null;
+  /** V2 처리 담당자(assigned_user_id) 표시명 */
+  assignedUserName?: string | null;
 }
 
 function formatTimelineDate(iso: string): string {
@@ -368,7 +370,14 @@ export function CustomerDetailModal({
                 </div>
                 <InfoItem icon={<Building2 className="w-4 h-4" />} label="유입 파트너" value={row.partnerName} />
                 <InfoItem icon={<Calendar className="w-4 h-4" />} label="접수일" value={row.submittedAt} />
-                {row.assignedAttorneyName && (
+                {row.assignedUserName && (
+                  <InfoItem
+                    icon={<User className="w-4 h-4" />}
+                    label="처리 담당자"
+                    value={row.assignedUserName}
+                  />
+                )}
+                {row.assignedAttorneyName && !row.assignedUserName && (
                   <InfoItem
                     icon={<Scale className="w-4 h-4" />}
                     label="담당 노무사"

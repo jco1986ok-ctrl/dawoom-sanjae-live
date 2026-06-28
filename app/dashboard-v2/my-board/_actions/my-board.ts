@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidV2LeadStatus } from "@/lib/v2-lead-status";
-import { isV2AssignableRole } from "@/lib/v2-assignable-users";
+import { isV2ProcessingHandlerRole } from "@/lib/v2-assignable-users";
 
 async function requireAssignee(
   leadId: string,
@@ -81,8 +81,8 @@ export async function handoffMyBoardLead(
     return { success: false, error: "선택한 담당자를 찾을 수 없습니다." };
   }
 
-  if (!isV2AssignableRole(assignee.role as string)) {
-    return { success: false, error: "배정 가능한 직원만 선택할 수 있습니다." };
+  if (!isV2ProcessingHandlerRole(assignee.role as string)) {
+    return { success: false, error: "배정 가능한 처리 담당자만 선택할 수 있습니다." };
   }
 
   const { error } = await admin

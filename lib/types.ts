@@ -4,7 +4,8 @@ export type UserRole =
   | "하위영업자"
   | "관리자"
   | "노무사"
-  | "대표노무사";
+  | "대표노무사"
+  | "일반팀원";
 
 import type { LeadStatusOption } from "@/lib/lead-status";
 

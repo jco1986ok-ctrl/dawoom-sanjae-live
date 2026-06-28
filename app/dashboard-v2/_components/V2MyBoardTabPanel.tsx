@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { ClipboardList } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
 import type { AdminUserListItem } from "@/lib/user-lineage";
-import { filterV2AssignableUsers } from "@/lib/v2-assignable-users";
+import { filterV2ProcessingHandlerUsers } from "@/lib/v2-assignable-users";
 import { filterV2MyTaskLeads } from "@/lib/v2-my-tasks";
 import { sortV2AssigneeLeads } from "@/lib/v2-task-aging";
 import MyBoardKanban, { buildMyBoardCards } from "../my-board/_components/MyBoardKanban";
@@ -23,7 +23,7 @@ export default function V2MyBoardTabPanel({ leads, users, viewerUserId }: Props)
   );
 
   const cards = useMemo(() => buildMyBoardCards(myLeads), [myLeads]);
-  const assignableUsers = useMemo(() => filterV2AssignableUsers(users), [users]);
+  const assignableUsers = useMemo(() => filterV2ProcessingHandlerUsers(users), [users]);
 
   return (
     <div className="space-y-4">

@@ -85,6 +85,8 @@ export function mapUserRoleToTestRole(role: UserRole): DashboardTestRole {
 
   if (role === "노무사") return "노무사";
 
+  if (role === "일반팀원") return "일반팀원";
+
   return "일반팀원";
 
 }
@@ -178,12 +180,16 @@ export function resolveSimulatedViewerContext(
       break;
     }
     case "일반팀원": {
-      const staff =
-        users.find((x) => x.is_active && x.role === "노무사" && x.id !== effectiveViewerId) ??
-        users.find((x) => x.is_active && x.role === "노무사");
-      if (staff) {
-        effectiveViewerId = staff.id;
-        effectiveViewerName = staff.name;
+      const u = pickUser("일반팀원", testRole === loggedInTestRole);
+      if (u) {
+        effectiveViewerId = u.id;
+        effectiveViewerName = u.name;
+      } else {
+        const fallback = users.find((x) => x.is_active && x.role === "일반팀원");
+        if (fallback) {
+          effectiveViewerId = fallback.id;
+          effectiveViewerName = fallback.name;
+        }
       }
       break;
     }
@@ -377,7 +383,7 @@ export function getDashboardPermissions(role: DashboardTestRole): DashboardPermi
 
         canChangePartnerLineage: false,
 
-        canAssignLead: false,
+        canAssignLead: true,
 
         canViewFinancialData: false,
 
@@ -404,6 +410,8 @@ export function testRoleToViewerRole(role: DashboardTestRole): UserRole {
   if (role === "제휴파트너") return "하위영업자";
 
   if (role === "노무사") return "노무사";
+
+  if (role === "일반팀원") return "일반팀원";
 
   return "노무사";
 
