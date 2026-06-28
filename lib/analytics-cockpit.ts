@@ -62,7 +62,6 @@ export function getAnalyticsViewTier(role: DashboardTestRole): AnalyticsViewTier
     case "제휴파트너":
       return "partner";
     case "노무사":
-    case "일반팀원":
       return "staff";
   }
 }

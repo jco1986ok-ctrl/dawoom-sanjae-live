@@ -50,6 +50,7 @@ export default function V2NotificationToastListener({
 
       for (const item of unread) {
         if (seenIdsRef.current.has(item.id)) continue;
+        if (item.kind === "reminder") continue;
         seenIdsRef.current.add(item.id);
 
         playV2NotificationSound();
@@ -57,11 +58,9 @@ export default function V2NotificationToastListener({
           position: "bottom-right",
           duration: 8000,
           description:
-            item.kind === "reminder"
-              ? "관리자 독촉 알림"
-              : item.kind === "handoff"
-                ? "바통 터치 알림"
-                : "새 알림",
+            item.kind === "handoff"
+              ? "바통 터치 알림"
+              : "새 알림",
           action: {
             label: "확인",
             onClick: () => notifyV2NotificationsRefresh(),

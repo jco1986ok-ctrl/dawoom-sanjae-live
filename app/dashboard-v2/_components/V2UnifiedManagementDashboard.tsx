@@ -120,7 +120,6 @@ export default function V2UnifiedManagementDashboard({
   }, [enrichedUsers, simulation.effectiveViewerId, adminAgentId]);
 
   const myTasksOnly = shouldUseV2MyTasksView(currentUserRole);
-  const canSendReminder = !myTasksOnly && permissions.canAssignLead;
   const canAssign = permissions.canAssignLead;
   const canCollaborate = permissions.canAssignLead;
 
@@ -243,9 +242,7 @@ export default function V2UnifiedManagementDashboard({
                 <h2 className="font-bold text-slate-900 text-sm tracking-tight">접수된 고객(DB) 관리</h2>
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   {permissions.canChangeLeadStatus || permissions.canWriteConsultMemo
-                    ? currentUserRole === "일반팀원"
-                      ? "3인 협업 보드 — 내 할 일 · 현장 · 노무사 구역"
-                      : "진행 상태 변경 · 처리 담당자 배정 · 상담 메모"
+                    ? "진행 상태 변경 · 처리 담당자 배정 · 상담 메모"
                     : "본인 유입 건만 열람 — 상태·배정·재무 정보는 표시되지 않습니다"}
                 </p>
               </div>
@@ -266,7 +263,6 @@ export default function V2UnifiedManagementDashboard({
               canChangeStatus={permissions.canChangeLeadStatus}
               canWriteMemo={permissions.canWriteConsultMemo}
               canDelete={permissions.canDeleteLeads}
-              canSendReminder={canSendReminder}
               canAssign={canAssign}
               canCollaborate={canCollaborate}
             />

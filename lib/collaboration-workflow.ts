@@ -61,7 +61,6 @@ export const HANDOFF_ACTIONS: Record<CollaborationOwnerRole, HandoffAction[]> = 
 export function testRoleToCollaborationOwner(
   role: DashboardTestRole,
 ): CollaborationOwnerRole | null {
-  if (role === "일반팀원") return "inside_staff";
   if (role === "공식파트너" || role === "제휴파트너") return "field_manager";
   if (role === "노무사" || role === "대표노무사") return "attorney";
   if (role === "마스터") return "inside_staff";

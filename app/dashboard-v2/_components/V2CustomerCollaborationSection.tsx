@@ -6,7 +6,6 @@ import type { AdminUserListItem } from "@/lib/user-lineage";
 import { shouldUseV2MyTasksView, isV2PartnerReferredLeadsView } from "@/lib/v2-my-tasks";
 import { canUseV2CustomerDbFilters } from "@/lib/v2-partner-access";
 import V2CustomerManageTable from "./V2CustomerManageTable";
-import V2InsideStaffBoard from "./V2InsideStaffBoard";
 
 interface Props {
   leads: LeadDetail[];
@@ -19,6 +18,7 @@ interface Props {
   canChangeStatus: boolean;
   canWriteMemo: boolean;
   canDelete: boolean;
+  /** @deprecated 독촉 기능 제거 — 라이브 호환용, 무시됨 */
   canSendReminder?: boolean;
   canAssign?: boolean;
   canCollaborate?: boolean;
@@ -35,31 +35,12 @@ export default function V2CustomerCollaborationSection({
   canChangeStatus,
   canWriteMemo,
   canDelete,
-  canSendReminder = false,
   canAssign = false,
   canCollaborate = false,
 }: Props) {
-  const isInsideStaffView = currentUserRole === "일반팀원";
   const myTasksOnly = shouldUseV2MyTasksView(currentUserRole);
   const partnerReferredView = isV2PartnerReferredLeadsView(currentUserRole);
   const showDbFilters = canUseV2CustomerDbFilters(currentUserRole);
-
-  if (isInsideStaffView) {
-    return (
-      <V2InsideStaffBoard
-        leads={leads}
-        users={users}
-        viewerUserId={viewerUserId}
-        myTasksOnly={myTasksOnly}
-        canChangeStatus={canChangeStatus}
-        canWriteMemo={canWriteMemo}
-        viewerRole={viewerRole}
-        canSendReminder={canSendReminder}
-        canAssign={canAssign}
-        canCollaborate={canCollaborate}
-      />
-    );
-  }
 
   return (
     <V2CustomerManageTable
@@ -76,7 +57,6 @@ export default function V2CustomerCollaborationSection({
       canChangeStatus={canChangeStatus}
       canWriteMemo={canWriteMemo}
       canDelete={canDelete}
-      canSendReminder={canSendReminder}
       canAssign={canAssign}
       canCollaborate={canCollaborate}
     />

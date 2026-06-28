@@ -88,8 +88,6 @@ interface Props {
   canWriteMemo?: boolean;
   /** 마스터(관리자) 접수 DB 삭제 */
   canDelete?: boolean;
-  /** 관리자 독촉 알림 */
-  canSendReminder?: boolean;
   /** 담당자 배정 */
   canAssign?: boolean;
   /** 바통 터치(협업 구역 이동) */
@@ -110,7 +108,6 @@ export default function V2CustomerManageTable({
   canChangeStatus = true,
   canWriteMemo = true,
   canDelete = false,
-  canSendReminder = false,
   canAssign = false,
   canCollaborate = false,
 }: Props) {

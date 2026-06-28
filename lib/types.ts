@@ -5,6 +5,7 @@ export type UserRole =
   | "관리자"
   | "노무사"
   | "대표노무사"
+  /** DB enum 잔존값 — 앱에서는 노무사로 취급, 신규 계정 생성 불가 */
   | "일반팀원";
 
 import type { LeadStatusOption } from "@/lib/lead-status";

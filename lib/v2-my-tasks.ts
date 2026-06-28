@@ -3,7 +3,7 @@ import type { LeadDetail } from "@/lib/lead-detail";
 import { isV2ExternalPartnerRole } from "@/lib/v2-partner-access";
 import { getLeadLastUpdatedAt } from "@/lib/v2-task-aging";
 
-/** V2 — 마스터·총괄·대표는 전체, 노무사·일반팀원은 배정 건만. 파트너는 본인 소개 건(별도 필터) */
+/** V2 — 마스터·총괄·대표는 전체, 노무사는 배정 건만. 파트너는 본인 소개 건(별도 필터) */
 export function shouldUseV2MyTasksView(testRole: DashboardTestRole): boolean {
   if (isV2ExternalPartnerRole(testRole)) return false;
   return testRole !== "마스터" && testRole !== "대표노무사" && testRole !== "총괄파트너";

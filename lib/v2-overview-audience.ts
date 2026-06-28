@@ -12,7 +12,6 @@ export const V2_INTERNAL_STAFF_ROLES: readonly DashboardTestRole[] = [
   "총괄파트너",
   "대표노무사",
   "노무사",
-  "일반팀원",
 ] as const;
 
 export type V2OverviewAudience = "sales_partner" | "internal_staff";
@@ -44,7 +43,6 @@ export function getV2OverviewHeaderCopy(role: DashboardTestRole): {
     총괄파트너: "링크 공유 · 조직 접수 · 업무 대기 한눈에",
     대표노무사: "링크 공유 · 배당 사건 · 업무 대기",
     노무사: "링크 공유 · 내 담당 사건 · 업무 대기",
-    일반팀원: "링크 공유 · 내 할 일 · 업무 대기",
   };
 
   return {

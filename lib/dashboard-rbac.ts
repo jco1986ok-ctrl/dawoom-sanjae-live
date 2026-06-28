@@ -17,9 +17,7 @@ export type DashboardTestRole =
 
   | "제휴파트너"
 
-  | "노무사"
-
-  | "일반팀원";
+  | "노무사";
 
 
 
@@ -36,8 +34,6 @@ export const DASHBOARD_TEST_ROLES: DashboardTestRole[] = [
   "제휴파트너",
 
   "노무사",
-
-  "일반팀원",
 
 ];
 
@@ -85,9 +81,9 @@ export function mapUserRoleToTestRole(role: UserRole): DashboardTestRole {
 
   if (role === "노무사") return "노무사";
 
-  if (role === "일반팀원") return "일반팀원";
+  if (role === "일반팀원") return "노무사";
 
-  return "일반팀원";
+  return "제휴파트너";
 
 }
 
@@ -179,20 +175,6 @@ export function resolveSimulatedViewerContext(
       }
       break;
     }
-    case "일반팀원": {
-      const u = pickUser("일반팀원", testRole === loggedInTestRole);
-      if (u) {
-        effectiveViewerId = u.id;
-        effectiveViewerName = u.name;
-      } else {
-        const fallback = users.find((x) => x.is_active && x.role === "일반팀원");
-        if (fallback) {
-          effectiveViewerId = fallback.id;
-          effectiveViewerName = fallback.name;
-        }
-      }
-      break;
-    }
   }
 
   const isSimulating =
@@ -216,8 +198,7 @@ export function canViewCustomerDetail(role: DashboardTestRole): boolean {
     role === "마스터" ||
     role === "총괄파트너" ||
     role === "대표노무사" ||
-    role === "노무사" ||
-    role === "일반팀원"
+    role === "노무사"
   );
 }
 
@@ -363,32 +344,6 @@ export function getDashboardPermissions(role: DashboardTestRole): DashboardPermi
 
       };
 
-    case "일반팀원":
-
-      return {
-
-        canChangeLeadStatus: false,
-
-        canWriteConsultMemo: false,
-
-        canEditPartnerRoles: false,
-
-        canDeleteUsers: false,
-
-        canDeleteLeads: false,
-
-        canInvitePartners: false,
-
-        canAssignAttorney: false,
-
-        canChangePartnerLineage: false,
-
-        canAssignLead: true,
-
-        canViewFinancialData: false,
-
-      };
-
   }
 
 }
@@ -411,8 +366,6 @@ export function testRoleToViewerRole(role: DashboardTestRole): UserRole {
 
   if (role === "노무사") return "노무사";
 
-  if (role === "일반팀원") return "일반팀원";
-
   return "노무사";
 
 }
@@ -427,7 +380,7 @@ export function testRoleToPanelRole(role: DashboardTestRole): string {
 
   if (role === "대표노무사") return "대표노무사";
 
-  if (role === "노무사" || role === "일반팀원") return "노무사";
+  if (role === "노무사") return "노무사";
 
   return "파트너";
 
@@ -448,8 +401,6 @@ export const TEST_ROLE_LABEL: Record<DashboardTestRole, string> = {
   제휴파트너: "🤝 제휴파트너",
 
   노무사: "👨‍💼 노무사",
-
-  일반팀원: "📋 일반팀원",
 
 };
 

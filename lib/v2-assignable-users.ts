@@ -3,14 +3,13 @@ import type { AdminUserListItem } from "@/lib/user-lineage";
 
 /**
  * 고객 처리 담당자로 배정·이관 가능한 DB 역할
- * (마스터·총괄파트너·대표노무사·노무사·일반팀원)
+ * (마스터·총괄파트너·대표노무사·노무사 — 내근 실무는 노무사 계정으로 배정)
  */
 export const V2_PROCESSING_HANDLER_DB_ROLES: readonly UserRole[] = [
   "관리자",
   "총괄공식파트너",
   "대표노무사",
   "노무사",
-  "일반팀원",
 ] as const;
 
 /** @deprecated V2_PROCESSING_HANDLER_DB_ROLES 와 동일 */
@@ -27,7 +26,6 @@ const PROCESSING_HANDLER_ROLE_ALIASES: Record<string, UserRole> = {
   총괄공식파트너: "총괄공식파트너",
   대표노무사: "대표노무사",
   노무사: "노무사",
-  일반팀원: "일반팀원",
 };
 
 export function normalizeV2ProcessingHandlerRole(
