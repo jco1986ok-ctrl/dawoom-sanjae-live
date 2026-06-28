@@ -21,6 +21,8 @@ export interface UseDashboardLeadsOptions {
   realtime?: boolean;
   /** false면 SSR/부모에서 넘긴 leads만 사용 (직책 테스트 스코프용) */
   clientRefetch?: boolean;
+  /** 파트너 스코프 등 — false면 realtime·재조회로 목록이 넓어지지 않음 */
+  scopeFilter?: (lead: LeadDetail) => boolean;
 }
 
 export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
@@ -30,7 +32,16 @@ export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
     enrich = false,
     realtime = true,
     clientRefetch = true,
+    scopeFilter,
   } = options;
+
+  const scopeFilterRef = useRef(scopeFilter);
+  scopeFilterRef.current = scopeFilter;
+
+  const matchesScope = useCallback((lead: LeadDetail) => {
+    const fn = scopeFilterRef.current;
+    return fn ? fn(lead) : true;
+  }, []);
 
   const initialRef = useRef(initialLeads);
   initialRef.current = initialLeads;
@@ -77,7 +88,8 @@ export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
       }
 
       const data = json.data ?? [];
-      setCustomers(data);
+      const fn = scopeFilterRef.current;
+      setCustomers(fn ? data.filter(fn) : data);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("[useDashboardLeads] 예외:", err);
@@ -95,16 +107,17 @@ export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
   fetchCustomersRef.current = fetchCustomers;
 
   const scheduleSilentEnrichRefetch = useCallback(() => {
-    if (!enrich) return;
+    if (!clientRefetch || !enrich) return;
     if (enrichTimerRef.current) clearTimeout(enrichTimerRef.current);
     enrichTimerRef.current = setTimeout(() => {
       void fetchCustomersRef.current({ silent: true });
     }, 350);
-  }, [enrich]);
+  }, [clientRefetch, enrich]);
 
   useEffect(() => {
     if (initialLeads.length > 0) {
-      setCustomers(initialLeads);
+      const fn = scopeFilterRef.current;
+      setCustomers(fn ? initialLeads.filter(fn) : initialLeads);
       setIsLoading(false);
     }
   }, [initialLeads]);
@@ -133,6 +146,8 @@ export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
           if (eventType === "INSERT" && payload.new) {
             const lead = realtimeRowToLeadDetail(payload.new as RealtimeLeadRow);
             if (!lead.id || !leadMatchesAssignedFilter(lead, assignedTo)) return;
+            if (!matchesScope(lead)) return;
+            if (!clientRefetch) return;
 
             setCustomers((prev) => {
               if (prev.some((l) => l.id === lead.id)) return prev;
@@ -148,7 +163,10 @@ export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
             if (!id) return;
 
             const updatedLead = realtimeRowToLeadDetail(row);
-            if (!leadMatchesAssignedFilter(updatedLead, assignedTo)) {
+            const inScope =
+              leadMatchesAssignedFilter(updatedLead, assignedTo) && matchesScope(updatedLead);
+
+            if (!inScope) {
               setCustomers((prev) => prev.filter((l) => l.id !== id));
               return;
             }
@@ -156,6 +174,7 @@ export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
             setCustomers((prev) => {
               const exists = prev.some((l) => l.id === id);
               if (!exists) {
+                if (!clientRefetch) return prev;
                 return [updatedLead, ...prev];
               }
               return prev.map((l) =>
@@ -189,7 +208,7 @@ export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
       }
       void supabase.removeChannel(channel);
     };
-  }, [assignedTo, realtime, scheduleSilentEnrichRefetch]);
+  }, [assignedTo, clientRefetch, matchesScope, realtime, scheduleSilentEnrichRefetch]);
 
   return {
     customers,

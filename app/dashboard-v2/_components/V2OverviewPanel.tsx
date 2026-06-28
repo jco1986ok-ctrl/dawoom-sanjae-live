@@ -11,10 +11,11 @@ import { isLeadAgingStale } from "@/lib/v2-task-aging";
 import { formatLeadDiseaseDisplay } from "@/lib/form-array-fields";
 import {
   sortLeadsByRecency,
-  V2_OVERVIEW_TAB_IDS,
   V2_OVERVIEW_TAB_LABELS,
   getV2OverviewTabsForRole,
+  getDefaultV2OverviewTabForRole,
 } from "@/lib/v2-overview-tabs";
+import { canViewV2InternalConsultSummary } from "@/lib/v2-partner-access";
 import {
   computeV2WorkQueueStats,
   computeV2MainSummaryCards,
@@ -146,12 +147,16 @@ export default function V2OverviewPanel({
     () => getV2OverviewTabsForRole(currentUserRole),
     [currentUserRole],
   );
+  const canViewConsultSummary = canViewV2InternalConsultSummary(currentUserRole);
+  const effectiveTab = visibleTabs.includes(activeTab)
+    ? activeTab
+    : (visibleTabs[0] ?? getDefaultV2OverviewTabForRole(currentUserRole));
 
   useEffect(() => {
     if (!visibleTabs.includes(activeTab)) {
-      setHashTab(visibleTabs[0] ?? "summary");
+      setHashTab(visibleTabs[0] ?? getDefaultV2OverviewTabForRole(currentUserRole));
     }
-  }, [activeTab, visibleTabs, setHashTab]);
+  }, [activeTab, visibleTabs, setHashTab, currentUserRole]);
   const summaryCards = useMemo(
     () => computeV2MainSummaryCards(statusCount),
     [statusCount],
@@ -223,11 +228,11 @@ export default function V2OverviewPanel({
               key={tabId}
               type="button"
               role="tab"
-              aria-selected={activeTab === tabId}
+              aria-selected={effectiveTab === tabId}
               onClick={() => setHashTab(tabId)}
               className={cn(
                 "flex-1 min-w-[max-content] px-3 py-2 rounded-md text-xs font-semibold transition-colors whitespace-nowrap",
-                activeTab === tabId
+                effectiveTab === tabId
                   ? "bg-[#0f2d5e] text-white"
                   : "text-slate-500 hover:text-slate-800 hover:bg-slate-50",
               )}
@@ -239,10 +244,11 @@ export default function V2OverviewPanel({
 
         <div role="tabpanel">
           <V2OverviewTabPanels
-            tab={activeTab}
+            tab={effectiveTab}
             leads={displayLeads}
             users={users}
             canViewFinancialData={canViewFinancialData}
+            canViewInternalConsultSummary={canViewConsultSummary}
           />
         </div>
       </section>

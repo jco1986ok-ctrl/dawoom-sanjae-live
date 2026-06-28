@@ -68,6 +68,7 @@ export default function V2CustomerCollaborationSection({
       viewerUserId={viewerUserId}
       myTasksOnly={myTasksOnly}
       partnerReferredView={partnerReferredView}
+      partnerScopeRole={currentUserRole}
       showDbFilters={showDbFilters}
       assignedTo={assignedTo}
       clientRefetch={clientRefetch}

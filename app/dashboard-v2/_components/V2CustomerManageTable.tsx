@@ -59,6 +59,11 @@ import type { CollaborationOwnerRole } from "@/lib/collaboration-workflow";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import { markLeadAssignmentRead } from "../_actions/assignment";
 import { getV2AgingRowClass, isLeadAgingStale } from "@/lib/v2-task-aging";
+import type { DashboardTestRole } from "@/lib/dashboard-rbac";
+import {
+  filterLeadsForPartnerViewer,
+  leadMatchesPartnerViewerScope,
+} from "@/lib/v2-partner-access";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -68,6 +73,8 @@ interface Props {
   myTasksOnly?: boolean;
   /** 공식·제휴 파트너 — 본인 소개 고객 열람 전용 */
   partnerReferredView?: boolean;
+  /** partnerReferredView 시 referred_by 스코프 판별 */
+  partnerScopeRole?: DashboardTestRole;
   /** 단계·질병 퀵 필터 — 마스터·대표노무사·노무사·총괄만 */
   showDbFilters?: boolean;
   /** 노무사 배당 건만 클라이언트에서 재조회 */
@@ -94,6 +101,7 @@ export default function V2CustomerManageTable({
   viewerUserId = "",
   myTasksOnly = false,
   partnerReferredView = false,
+  partnerScopeRole,
   showDbFilters = true,
   assignedTo,
   clientRefetch = true,
@@ -108,12 +116,25 @@ export default function V2CustomerManageTable({
   const showDocsMatrix = canViewDocumentsMatrix(viewerRole);
   const docsInteractive = showDocsMatrix;
   const canDownloadContract = canDownloadContractPdf(viewerRole);
+
+  const partnerScopeFilter = useMemo(() => {
+    if (!partnerReferredView || !viewerUserId || !partnerScopeRole) return undefined;
+    return (lead: LeadDetail) =>
+      leadMatchesPartnerViewerScope(lead, viewerUserId, partnerScopeRole, users);
+  }, [partnerReferredView, viewerUserId, partnerScopeRole, users]);
+
   const { customers, isLoading } = useDashboardLeads({
     initialLeads,
     assignedTo,
     enrich: true,
     clientRefetch,
+    scopeFilter: partnerScopeFilter,
   });
+
+  const partnerScopedCustomers = useMemo(() => {
+    if (!partnerReferredView || !viewerUserId || !partnerScopeRole) return customers;
+    return filterLeadsForPartnerViewer(customers, viewerUserId, partnerScopeRole, users);
+  }, [customers, partnerReferredView, viewerUserId, partnerScopeRole, users]);
 
   const [rows, setRows] = useState<V2CustomerDetailRow[]>(() =>
     initialLeads.map((l) => buildV2CustomerDetailRow(l, users)),
@@ -126,14 +147,14 @@ export default function V2CustomerManageTable({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    setRows(customers.map((l) => buildV2CustomerDetailRow(l, users)));
-  }, [customers, users]);
+    setRows(partnerScopedCustomers.map((l) => buildV2CustomerDetailRow(l, users)));
+  }, [partnerScopedCustomers, users]);
 
   useEffect(() => {
     if (!detailOpen || !detailTarget) return;
-    const fresh = customers.find((c) => c.id === detailTarget.id);
+    const fresh = partnerScopedCustomers.find((c) => c.id === detailTarget.id);
     if (fresh) setDetailTarget(buildV2CustomerDetailRow(fresh, users));
-  }, [customers, detailOpen, detailTarget?.id, users]);
+  }, [partnerScopedCustomers, detailOpen, detailTarget?.id, users]);
 
   const scopedRows = useMemo(() => {
     let list = rows;

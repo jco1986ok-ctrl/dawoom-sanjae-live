@@ -36,6 +36,7 @@ interface Props {
   leads: LeadDetail[];
   users: AdminUserListItem[];
   canViewFinancialData?: boolean;
+  canViewInternalConsultSummary?: boolean;
 }
 
 function CockpitCard({
@@ -425,12 +426,19 @@ export default function V2OverviewTabPanels({
   leads,
   users,
   canViewFinancialData = true,
+  canViewInternalConsultSummary = true,
 }: Props) {
   switch (tab) {
     case "summary":
-      return <SummaryTab leads={leads} />;
+      return canViewInternalConsultSummary ? (
+        <SummaryTab leads={leads} />
+      ) : null;
     case "finance":
-      return canViewFinancialData ? <FinanceTab leads={leads} /> : <SummaryTab leads={leads} />;
+      return canViewFinancialData ? (
+        <FinanceTab leads={leads} />
+      ) : canViewInternalConsultSummary ? (
+        <SummaryTab leads={leads} />
+      ) : null;
     case "team":
       return (
         <TeamTab

@@ -1,5 +1,7 @@
 import type { LeadDetail } from "@/lib/lead-detail";
+import type { AdminUserListItem } from "@/lib/user-lineage";
 import type { DashboardTestRole } from "@/lib/dashboard-rbac";
+import { filterLeadsByLine } from "@/lib/analytics-cockpit";
 
 /** 외부 영업 파트너 (공식·제휴) — 고객 DB 열람 전용 */
 export const V2_EXTERNAL_PARTNER_ROLES: readonly DashboardTestRole[] = [
@@ -35,4 +37,24 @@ export function filterLeadsReferredByViewer(
 ): LeadDetail[] {
   if (!viewerUserId) return [];
   return leads.filter((lead) => lead.referred_by_user_id === viewerUserId);
+}
+
+/** 제휴=본인 유입, 공식=산하 파트너 유입 포함 */
+export function filterLeadsForPartnerViewer(
+  leads: LeadDetail[],
+  viewerUserId: string,
+  role: DashboardTestRole,
+  users: AdminUserListItem[],
+): LeadDetail[] {
+  if (!isV2ExternalPartnerRole(role) || !viewerUserId) return leads;
+  return filterLeadsByLine(leads, viewerUserId, role, users);
+}
+
+export function leadMatchesPartnerViewerScope(
+  lead: LeadDetail,
+  viewerUserId: string,
+  role: DashboardTestRole,
+  users: AdminUserListItem[],
+): boolean {
+  return filterLeadsForPartnerViewer([lead], viewerUserId, role, users).length > 0;
 }

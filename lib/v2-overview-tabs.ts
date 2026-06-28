@@ -23,6 +23,11 @@ export const V2_OVERVIEW_TAB_LABELS: Record<V2OverviewTabId, string> = {
 
 const DEFAULT_TAB: V2OverviewTabId = "summary";
 
+export function getDefaultV2OverviewTabForRole(role: DashboardTestRole): V2OverviewTabId {
+  if (isV2ExternalPartnerRole(role)) return "schedule";
+  return DEFAULT_TAB;
+}
+
 export function isV2OverviewTabId(value: string): value is V2OverviewTabId {
   return (V2_OVERVIEW_TAB_IDS as readonly string[]).includes(value);
 }
