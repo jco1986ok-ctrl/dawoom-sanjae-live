@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LogOut, User } from "lucide-react";
 import type { AppUser } from "@/lib/types";
 import ChangePasswordModal from "./ChangePasswordModal";
 import ParoLogo, { PARO_GREETING } from "@/components/ParoLogo";
 import DashboardBoardSwitch, { DashboardBoardSwitchCompact } from "./DashboardBoardSwitch";
+import { LIVE_MY_BOARD_ROUTE } from "@/lib/live-my-board-route";
 
 const ROLE_LABEL: Record<string, string> = {
   총괄공식파트너: "총괄 파트너",
@@ -25,6 +28,9 @@ const ROLE_COLOR: Record<string, string> = {
 };
 
 export default function DashboardNav({ user }: { user: AppUser }) {
+  const pathname = usePathname();
+  const onMyBoard = pathname?.startsWith(LIVE_MY_BOARD_ROUTE);
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.replace("/login");
@@ -48,6 +54,16 @@ export default function DashboardNav({ user }: { user: AppUser }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <Link
+            href={LIVE_MY_BOARD_ROUTE}
+            className={`hidden sm:inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors shrink-0
+              ${onMyBoard
+                ? "bg-[#0f2d5e] text-white border-[#0f2d5e]"
+                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+              }`}
+          >
+            📋 내 업무 보드
+          </Link>
           <DashboardBoardSwitchCompact userRole={user.role} />
           <DashboardBoardSwitch userRole={user.role} />
           <div className="flex items-center gap-2">

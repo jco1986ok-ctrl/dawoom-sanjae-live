@@ -25,6 +25,7 @@ export const DASHBOARD_BOARDS = {
 export const BOARD_URLS = {
   production: "https://pharos-sanjae.com",
   liveDashboard: "https://pharos-sanjae.com/dashboard",
+  liveMyBoard: "https://pharos-sanjae.com/dashboard/my-board",
   v2Dashboard: "https://pharos-sanjae.com/dashboard-v2",
   v2MyBoard: "https://pharos-sanjae.com/dashboard-v2/my-board",
   intake: "https://pharos-sanjae.com",
