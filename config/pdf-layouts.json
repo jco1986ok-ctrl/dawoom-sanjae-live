@@ -1,0 +1,72 @@
+{
+  "_comment": "PDF 좌표 설정 — /dashboard/admin/pdf-calibrate 에서 조정 후 이 파일에 붙여넣기",
+  "pageSize": { "width": 595, "height": 841 },
+  "weim": {
+    "date": {
+      "year": { "x": 268, "y": 253, "size": 10 },
+      "month": { "x": 301, "y": 253, "size": 10 },
+      "day": { "x": 334, "y": 252, "size": 10 },
+      "plainMonthDay": true
+    },
+    "name": { "x": 178, "y": 190, "size": 10 },
+    "address": {
+      "x": 179,
+      "y": 167,
+      "lineHeight": 11,
+      "maxWidth": 340,
+      "maxLines": 3,
+      "size": 9
+    },
+    "residentNumber": { "x": 190, "y": 147, "size": 10 },
+    "phone": { "x": 182, "y": 125, "size": 10 },
+    "signature": { "x": 255, "y": 188, "width": 52, "height": 26 }
+  },
+  "daeri": {
+    "nameTop": { "x": 219, "y": 674, "size": 10 },
+    "birthDate": { "x": 362, "y": 671, "size": 10 },
+    "gender": { "x": 491, "y": 672, "size": 10 },
+    "zonecode": { "x": 219, "y": 623, "size": 9 },
+    "address": {
+      "x": 276,
+      "y": 638,
+      "lineHeight": 12,
+      "maxWidth": 255,
+      "maxLines": 2,
+      "size": 9
+    },
+    "phone": { "x": 489, "y": 623, "size": 9 },
+    "date": {
+      "year": { "x": 378, "y": 245, "size": 10 },
+      "month": { "x": 426, "y": 244, "size": 10 },
+      "day": { "x": 474, "y": 244, "size": 10 },
+      "fullYear": false,
+      "plainMonthDay": true
+    },
+    "nameBottom": { "x": 376, "y": 210, "size": 10 },
+    "signature": { "x": 458, "y": 211, "width": 56, "height": 28 }
+  },
+  "yakjung": {
+    "name": { "x": 198, "y": 751, "size": 10 },
+    "residentNumber": { "x": 430, "y": 752, "size": 10 },
+    "address": {
+      "x": 179,
+      "y": 731,
+      "lineHeight": 12,
+      "maxWidth": 240,
+      "maxLines": 3,
+      "size": 9
+    },
+    "phone": { "x": 423, "y": 734, "size": 10 },
+    "retainerFee": { "x": 326, "y": 557, "size": 10, "value": "0" },
+    "successFee": { "x": 333, "y": 521, "size": 10, "value": "25" },
+    "date": {
+      "year": { "x": 273, "y": 113, "size": 10 },
+      "month": { "x": 300, "y": 112, "size": 10 },
+      "day": { "x": 329, "y": 113, "size": 10 },
+      "fullYear": false,
+      "plainMonthDay": true
+    },
+    "nameSign": { "x": 144, "y": 68, "size": 10 },
+    "signature": { "x": 256, "y": 69, "width": 54, "height": 26 }
+  }
+}
