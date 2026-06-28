@@ -68,6 +68,8 @@ interface Props {
   myTasksOnly?: boolean;
   /** 공식·제휴 파트너 — 본인 소개 고객 열람 전용 */
   partnerReferredView?: boolean;
+  /** 단계·질병 퀵 필터 — 마스터·대표노무사·노무사·총괄만 */
+  showDbFilters?: boolean;
   /** 노무사 배당 건만 클라이언트에서 재조회 */
   assignedTo?: string;
   /** false면 부모에서 스코핑한 leads만 사용 */
@@ -92,6 +94,7 @@ export default function V2CustomerManageTable({
   viewerUserId = "",
   myTasksOnly = false,
   partnerReferredView = false,
+  showDbFilters = true,
   assignedTo,
   clientRefetch = true,
   viewerRole = "",
@@ -147,8 +150,9 @@ export default function V2CustomerManageTable({
   }, [rows, myTasksOnly, viewerUserId]);
 
   const filteredRows = useMemo(
-    () =>
-      scopedRows.filter(
+    () => {
+      if (!showDbFilters) return scopedRows;
+      return scopedRows.filter(
         (r) =>
           matchesV2CustomerQuickFilter(r.consultationStatus, quickFilter) &&
           matchesV2DiseaseFilter(
@@ -159,8 +163,9 @@ export default function V2CustomerManageTable({
             },
             diseaseFilter,
           ),
-      ),
-    [scopedRows, quickFilter, diseaseFilter],
+      );
+    },
+    [scopedRows, quickFilter, diseaseFilter, showDbFilters],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / CUSTOMER_TABLE_PAGE_SIZE));
@@ -318,49 +323,53 @@ export default function V2CustomerManageTable({
 
   return (
     <>
-      {/* 퀵 필터 */}
+      {/* 퀵 필터 — 마스터·대표노무사·노무사·총괄만 */}
       <div className="px-4 sm:px-5 pt-4 pb-3 border-b border-slate-100 bg-slate-50/50">
-        <div className="flex flex-wrap gap-2">
-          {V2_CUSTOMER_QUICK_FILTERS.map((f) => {
-            const active = quickFilter === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => handleQuickFilter(f.id)}
-                className={`inline-flex items-center px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all
+        {showDbFilters && (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {V2_CUSTOMER_QUICK_FILTERS.map((f) => {
+                const active = quickFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => handleQuickFilter(f.id)}
+                    className={`inline-flex items-center px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all
                   ${active
                     ? "bg-[#3182f6] text-white shadow-sm shadow-blue-200/60"
                     : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                   }`}
-              >
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-        <div
-          className="flex gap-2 mt-2.5 pt-2.5 border-t border-slate-100 overflow-x-auto whitespace-nowrap scrollbar-hide"
-        >
-          {V2_DISEASE_FILTERS.map((f) => {
-            const active = diseaseFilter === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => handleDiseaseFilter(f.id)}
-                className={`inline-flex shrink-0 items-center px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div
+              className="flex gap-2 mt-2.5 pt-2.5 border-t border-slate-100 overflow-x-auto whitespace-nowrap scrollbar-hide"
+            >
+              {V2_DISEASE_FILTERS.map((f) => {
+                const active = diseaseFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => handleDiseaseFilter(f.id)}
+                    className={`inline-flex shrink-0 items-center px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all
                   ${active
                     ? "bg-[#0f2d5e] text-white shadow-sm"
                     : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                   }`}
-              >
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-        <p className="text-[11px] text-slate-400 mt-2.5">
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+        <p className={`text-[11px] text-slate-400 ${showDbFilters ? "mt-2.5" : ""}`}>
           {myTasksOnly && (
             <span className="inline-flex items-center gap-1 text-amber-700 font-semibold mr-2">
               내 업무 {scopedRows.length}건
@@ -389,7 +398,7 @@ export default function V2CustomerManageTable({
                 ? "본인 소개 고객이 없습니다."
                 : "선택한 필터에 해당하는 고객이 없습니다."}
           </p>
-          {!myTasksOnly && !partnerReferredView && (
+          {!myTasksOnly && !partnerReferredView && showDbFilters && (
             <button
               type="button"
               onClick={() => handleQuickFilter("all")}

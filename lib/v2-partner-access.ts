@@ -11,6 +11,18 @@ export function isV2ExternalPartnerRole(role: DashboardTestRole): boolean {
   return (V2_EXTERNAL_PARTNER_ROLES as readonly string[]).includes(role);
 }
 
+/** 고객(DB) 탭 — 단계·질병 퀵 필터 (마스터·대표노무사·노무사·총괄만) */
+const V2_CUSTOMER_DB_FILTER_ROLES: readonly DashboardTestRole[] = [
+  "마스터",
+  "대표노무사",
+  "노무사",
+  "총괄파트너",
+] as const;
+
+export function canUseV2CustomerDbFilters(role: DashboardTestRole): boolean {
+  return (V2_CUSTOMER_DB_FILTER_ROLES as readonly string[]).includes(role);
+}
+
 /** 유입 파트너(referred_by_user_id)가 본인인 접수만 */
 export function filterLeadsReferredByViewer(
   leads: LeadDetail[],
