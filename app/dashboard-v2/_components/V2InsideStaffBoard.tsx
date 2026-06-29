@@ -314,9 +314,15 @@ export default function V2InsideStaffBoard({
         canChangeStatus={canChangeStatus}
         canWriteMemo={canWriteMemo}
         viewerRole={viewerRole}
+        viewerUserId={viewerUserId}
         StatusSelectComponent={V2LeadStatusSelect}
         StatusBadgeComponent={V2LeadStatusBadge}
         onNotesUpdated={applyNotesUpdate}
+        onCommentsUpdated={(id, nextComments) => {
+          setDetailTarget((prev) =>
+            prev?.id === id ? { ...prev, comments: nextComments } : prev,
+          );
+        }}
         onStatusUpdated={applyStatusUpdate}
         footer={
           canAssign && detailTarget ? (

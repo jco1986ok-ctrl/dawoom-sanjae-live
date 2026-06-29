@@ -1,7 +1,9 @@
 "use server";
 
 import { isValidLeadStatus } from "@/lib/lead-status";
-import { appendConsultMemoToNotes, appendStatusChangeToNotes } from "@/lib/lead-consult-memos";
+import { appendStatusChangeToNotes } from "@/lib/lead-consult-memos";
+import type { ConsultComment } from "@/lib/lead-consult-memos";
+import { insertLeadConsultComment } from "./lead-comments";
 import { isDiseaseCategory, type DiseaseCategory } from "@/lib/disease-category";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -37,7 +39,10 @@ async function assertCanDeleteLead(): Promise<
 
 async function assertCanEditLeadStatus(
   leadId: string,
-): Promise<{ ok: true; role: UserRole; userId: string } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; role: UserRole; userId: string; authorName: string }
+  | { ok: false; error: string }
+> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -46,7 +51,7 @@ async function assertCanEditLeadStatus(
 
   const { data: profile } = await supabase
     .from("users")
-    .select("role")
+    .select("role, name")
     .eq("id", user.id)
     .single();
 
@@ -54,6 +59,8 @@ async function assertCanEditLeadStatus(
   if (!role || !STATUS_EDIT_ROLES.includes(role)) {
     return { ok: false, error: "상태 변경 권한이 없습니다." };
   }
+
+  const authorName = (profile?.name as string | undefined)?.trim() || "알 수 없음";
 
   if (role === "노무사") {
     const adminClient = createAdminClient();
@@ -69,7 +76,7 @@ async function assertCanEditLeadStatus(
     }
   }
 
-  return { ok: true, role, userId: user.id };
+  return { ok: true, role, userId: user.id, authorName };
 }
 
 export async function assignLead(
@@ -164,42 +171,30 @@ export async function updateLeadStatus(
   }
 }
 
-/** 기존 leads.notes 컬럼에 노무사 상담 메모 한 줄 추가 (스키마 변경 없음) */
+/** lead_comments 테이블에 상담 코멘트 저장 (작성자 실명 포함) */
 export async function appendLeadConsultMemo(
   leadId: string,
   content: string,
-): Promise<{ success: boolean; error?: string; notes?: string }> {
+): Promise<{ success: boolean; error?: string; comment?: ConsultComment }> {
   const trimmed = content.trim();
   if (!trimmed) return { success: false, error: "메모 내용을 입력해 주세요." };
 
   const auth = await assertCanEditLeadStatus(leadId);
   if (!auth.ok) return { success: false, error: auth.error };
 
-  try {
-    const adminClient = createAdminClient();
-    const { data: lead, error: fetchError } = await adminClient
-      .from("leads")
-      .select("notes")
-      .eq("id", leadId)
-      .maybeSingle();
+  const result = await insertLeadConsultComment(
+    leadId,
+    auth.userId,
+    auth.authorName,
+    trimmed,
+  );
 
-    if (fetchError) return { success: false, error: fetchError.message };
-    if (!lead) return { success: false, error: "접수 건을 찾을 수 없습니다." };
-
-    const notes = appendConsultMemoToNotes(lead.notes as string | null, trimmed);
-    const { error: updateError } = await adminClient
-      .from("leads")
-      .update({ notes })
-      .eq("id", leadId);
-
-    if (updateError) return { success: false, error: updateError.message };
-
+  if (result.success) {
     revalidatePath("/dashboard", "layout");
-    return { success: true, notes };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "서버 오류";
-    return { success: false, error: msg };
+    revalidatePath("/dashboard-v2", "layout");
   }
+
+  return result;
 }
 
 export async function updateLeadDiseaseCategory(

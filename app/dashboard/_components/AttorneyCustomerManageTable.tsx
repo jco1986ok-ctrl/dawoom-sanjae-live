@@ -678,6 +678,9 @@ export default function AttorneyCustomerManageTable({
         showDocuments={showDocsMatrix}
         viewerRole={viewerRole}
         onNotesUpdated={(id, notes) => applyNotes(id, notes)}
+        onCommentsUpdated={(id, nextComments) =>
+          syncRowData(id, { comments: nextComments })
+        }
         onStatusUpdated={(id, status, notes) => updateStatus(id, status, notes)}
         onDocsUpdated={(id, patch) => {
           setRows((prev) =>

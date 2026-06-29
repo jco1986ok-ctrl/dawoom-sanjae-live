@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
   X,
   Phone,
@@ -26,6 +26,7 @@ import {
   type ConsultComment,
 } from "@/lib/lead-consult-memos";
 import { appendLeadConsultMemo } from "../_actions/leads";
+import { fetchLeadCommentTimeline } from "../_actions/lead-comments";
 import { SurveyDetailReport } from "./SurveyDetailReport";
 import { deriveLeadDocFiles, type LeadDocFilesMap, type LeadDocKey } from "@/lib/lead-doc-files";
 import { deriveLeadDocsStatus, type LeadDocsStatus, canAdminManageLeadDocuments, canViewLeadDocumentsReadOnly } from "@/lib/lead-docs-status";
@@ -98,7 +99,10 @@ interface Props {
   /** 서류 매트릭스 열람·업로드 */
   showDocuments?: boolean;
   viewerRole?: string;
+  /** 현재 로그인 사용자 — 말풍선 좌우 구분 */
+  viewerUserId?: string;
   onNotesUpdated: (leadId: string, notes: string) => void;
+  onCommentsUpdated?: (leadId: string, comments: ConsultComment[]) => void;
   onStatusUpdated: (leadId: string, status: string, notes?: string) => void;
   onDocsUpdated?: (
     leadId: string,
@@ -134,7 +138,9 @@ export function CustomerDetailModal({
   canDownloadContract = false,
   showDocuments = false,
   viewerRole = "",
+  viewerUserId,
   onNotesUpdated,
+  onCommentsUpdated,
   onStatusUpdated,
   onDocsUpdated,
   onOtherDocsUpdated,
@@ -154,6 +160,9 @@ export function CustomerDetailModal({
   const [localDocFiles, setLocalDocFiles] = useState<LeadDocFilesMap | null>(null);
   const [localOtherDocs, setLocalOtherDocs] = useState<OtherDocEntry[] | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileDetailTab>("info");
+  const [comments, setComments] = useState<ConsultComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
   const readOnly = !canChangeStatus && !canWriteMemo;
 
   useEffect(() => {
@@ -176,6 +185,26 @@ export function CustomerDetailModal({
     }
   }, [open, row?.id]);
 
+  useEffect(() => {
+    if (!open || !row?.id) return;
+    let cancelled = false;
+    setCommentsLoading(true);
+    void fetchLeadCommentTimeline(row.id, row.notes).then(({ comments: loaded }) => {
+      if (cancelled) return;
+      setComments(loaded);
+      setCommentsLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, row?.id, row?.notes]);
+
+  useEffect(() => {
+    if (!open || commentsLoading) return;
+    const el = chatScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [open, comments, commentsLoading]);
+
   const handleOpenChange = (next: boolean) => {
     if (!next) onClose();
   };
@@ -184,9 +213,14 @@ export function CustomerDetailModal({
     if (!row || !draft.trim() || !canWriteMemo) return;
     startTransition(async () => {
       const result = await appendLeadConsultMemo(row.id, draft.trim());
-      if (result.success && result.notes) {
-        onNotesUpdated(row.id, result.notes);
+      if (result.success && result.comment) {
+        const next = [...comments, result.comment].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        );
+        setComments(next);
+        onCommentsUpdated?.(row.id, next);
         setDraft("");
+        setError("");
       } else {
         setError(result.error ?? "등록 실패");
       }
@@ -472,56 +506,74 @@ export function CustomerDetailModal({
                 상담 코멘트 히스토리
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {row.comments.length}건 · 시간순 표시
+                {commentsLoading ? "불러오는 중…" : `${comments.length}건 · 시간순`}
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
-              {row.comments.length === 0 ? (
+            <div
+              ref={chatScrollRef}
+              className="flex-1 overflow-y-auto px-4 py-4 min-h-0 scroll-smooth"
+            >
+              {commentsLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                  <Loader2 className="w-6 h-6 animate-spin mb-2" />
+                  <p className="text-sm">코멘트 불러오는 중…</p>
+                </div>
+              ) : comments.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                   <MessageSquare className="w-8 h-8 opacity-30 mb-2" />
                   <p className="text-sm">아직 등록된 상담 코멘트가 없습니다.</p>
+                  <p className="text-[11px] mt-1">아래 입력창에서 첫 코멘트를 남겨 보세요.</p>
                 </div>
               ) : (
-                <ul className="flex flex-col gap-3">
-                  {row.comments.map((comment) => (
-                    <li key={comment.id}>
-                      <CommentBubble comment={comment} />
-                    </li>
+                <div className="flex flex-col gap-4">
+                  {comments.map((comment) => (
+                    <CommentChatBubble
+                      key={comment.id}
+                      comment={comment}
+                      viewerUserId={viewerUserId}
+                    />
                   ))}
-                </ul>
+                </div>
               )}
             </div>
 
             {canWriteMemo ? (
-              <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-4">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
-                  새 코멘트 작성
-                </label>
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder="상담 내용, 통화 결과, 다음 조치 사항 등을 입력하세요..."
-                  rows={3}
-                  disabled={isPending}
-                  className="w-full text-sm border-2 border-slate-200 rounded-xl px-4 py-3
-                    focus:outline-none focus:border-[#0f2d5e] focus:ring-2 focus:ring-[#0f2d5e]/10
-                    resize-none placeholder:text-slate-300 disabled:opacity-60"
-                />
-                {error && <p className="text-xs text-red-500 mt-1.5">{error}</p>}
-                <div className="flex justify-end mt-3">
+              <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-3">
+                <div className="flex gap-2 items-end">
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleRegister();
+                      }
+                    }}
+                    placeholder="상담 내용 입력… (Shift+Enter 줄바꿈)"
+                    rows={2}
+                    disabled={isPending}
+                    className="flex-1 text-sm border border-slate-200 rounded-2xl px-4 py-2.5
+                      focus:outline-none focus:border-[#0f2d5e] focus:ring-2 focus:ring-[#0f2d5e]/10
+                      resize-none min-h-[44px] max-h-[200px] placeholder:text-slate-300 disabled:opacity-60"
+                  />
                   <button
                     type="button"
                     onClick={handleRegister}
                     disabled={!draft.trim() || isPending}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white
-                      bg-[#0f2d5e] rounded-xl hover:bg-[#1a3d7a] transition-colors
+                    className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-full
+                      bg-[#0f2d5e] text-white hover:bg-[#1a3d7a] transition-colors
                       disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="전송"
                   >
-                    {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {isPending ? "등록 중..." : "등록"}
+                    {isPending ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <MessageSquare className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
+                {error && <p className="text-xs text-red-500 mt-1.5 px-1">{error}</p>}
               </div>
             ) : (
               <div className="shrink-0 border-t border-slate-200 bg-slate-100/80 px-5 py-4">
@@ -749,38 +801,64 @@ function InfoItem({
   );
 }
 
-function CommentBubble({ comment }: { comment: ConsultComment }) {
-  const isStatus = comment.kind === "status";
-  const isSystem = comment.author === "시스템";
+function CommentChatBubble({
+  comment,
+  viewerUserId,
+}: {
+  comment: ConsultComment;
+  viewerUserId?: string;
+}) {
+  const isSystem =
+    comment.kind === "status" ||
+    comment.author === "시스템" ||
+    comment.author === "진행상태";
+  const isMine =
+    Boolean(viewerUserId && comment.authorId && comment.authorId === viewerUserId);
+
+  if (isSystem) {
+    return (
+      <div className="flex justify-center px-2">
+        <div className="max-w-[95%] rounded-xl bg-slate-100/90 border border-slate-200 px-3 py-2 text-center">
+          <p className="text-[10px] font-semibold text-slate-500 mb-0.5">
+            {comment.author} · {formatTimelineDate(comment.date)}
+          </p>
+          <p className="text-xs text-slate-600 leading-relaxed break-words whitespace-pre-wrap">
+            {comment.text}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
-      className={`rounded-2xl px-4 py-3 border shadow-sm ${
-        isSystem
-          ? "bg-slate-50 border-slate-200"
-          : isStatus
-            ? "bg-indigo-50/80 border-indigo-100"
-            : "bg-white border-slate-200"
-      }`}
+      className={cn(
+        "flex flex-col max-w-[88%] sm:max-w-[78%]",
+        isMine ? "ml-auto items-end" : "mr-auto items-start",
+      )}
     >
-      <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-        <span
-          className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-            isSystem
-              ? "bg-slate-200 text-slate-700"
-              : isStatus
-                ? "bg-indigo-100 text-indigo-700"
-                : "bg-cyan-100 text-cyan-800"
-          }`}
-        >
-          {comment.author}
-        </span>
-        <span className="text-[11px] text-slate-400 flex items-center gap-1">
-          <Clock className="w-3 h-3" />
+      <div
+        className={cn(
+          "flex items-center gap-1.5 mb-1 px-0.5 text-[11px] text-slate-500",
+          isMine && "flex-row-reverse",
+        )}
+      >
+        <span className="font-bold text-slate-700">{comment.author}</span>
+        <span className="text-slate-400 flex items-center gap-0.5">
+          <Clock className="w-3 h-3 shrink-0" />
           {formatTimelineDate(comment.date)}
         </span>
       </div>
-      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{comment.text}</p>
+      <div
+        className={cn(
+          "rounded-2xl px-4 py-2.5 text-sm leading-relaxed break-words whitespace-pre-wrap shadow-sm",
+          isMine
+            ? "bg-[#0f2d5e] text-white rounded-br-sm"
+            : "bg-slate-200/90 text-slate-800 rounded-bl-sm",
+        )}
+      >
+        {comment.text}
+      </div>
     </div>
   );
 }

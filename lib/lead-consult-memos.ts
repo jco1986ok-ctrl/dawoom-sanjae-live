@@ -10,11 +10,13 @@ export interface ParsedConsultMemo {
   content: string;
 }
 
-/** UI 타임라인용 코멘트 (notes에서 파싱) */
+/** UI 타임라인용 코멘트 (notes에서 파싱 또는 lead_comments) */
 export interface ConsultComment {
   id: string;
   date: string;
   author: string;
+  /** lead_comments.author_id — 좌우 말풍선 구분용 */
+  authorId?: string | null;
   text: string;
   kind: "memo" | "status";
 }

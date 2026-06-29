@@ -888,9 +888,13 @@ export default function V2CustomerManageTable({
         canDownloadContract={canDownloadContract}
         showDocuments={showDocsMatrix}
         viewerRole={viewerRole}
+        viewerUserId={viewerUserId}
         StatusSelectComponent={V2LeadStatusSelect}
         StatusBadgeComponent={V2LeadStatusBadge}
         onNotesUpdated={(id, notes) => applyNotes(id, notes)}
+        onCommentsUpdated={(id, nextComments) =>
+          syncRowData(id, { comments: nextComments })
+        }
         onStatusUpdated={(id, status, notes) => updateStatus(id, status, notes)}
         onDocsUpdated={(id, patch) => {
           setRows((prev) =>
