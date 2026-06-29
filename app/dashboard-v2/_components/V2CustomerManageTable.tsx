@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Loader2,
   Trash2,
+  UserRound,
 } from "lucide-react";
 import type { LeadDetail } from "@/lib/lead-detail";
 import V2LeadStatusBadge from "./V2LeadStatusBadge";
@@ -66,6 +67,18 @@ import {
 } from "@/lib/v2-partner-access";
 import { cn } from "@/lib/utils";
 
+function AssigneeNameBadge({ name }: { name: string | null }) {
+  if (!name) {
+    return <span className="text-xs text-slate-400">미배정</span>;
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+      <UserRound className="w-3 h-3 shrink-0 opacity-60" />
+      {name}
+    </span>
+  );
+}
+
 interface Props {
   leads?: LeadDetail[];
   users?: AdminUserListItem[];
@@ -117,7 +130,7 @@ export default function V2CustomerManageTable({
       leadMatchesPartnerViewerScope(lead, viewerUserId, partnerScopeRole, users);
   }, [partnerReferredView, viewerUserId, partnerScopeRole, users]);
 
-  const { customers, isLoading } = useDashboardLeads({
+  const { customers, isLoading, setCustomers } = useDashboardLeads({
     initialLeads,
     assignedTo,
     enrich: true,
@@ -264,6 +277,19 @@ export default function V2CustomerManageTable({
       assignmentMemo: patch.assignmentMemo,
       isRead: patch.isRead,
     });
+    setCustomers((prev) =>
+      prev.map((lead) =>
+        lead.id === leadId
+          ? {
+              ...lead,
+              assigned_user_id: patch.assignedUserId,
+              assigned_user_name: patch.assignedUserName,
+              assignment_memo: patch.assignmentMemo,
+              is_read: patch.isRead,
+            }
+          : lead,
+      ),
+    );
   };
 
   const rowHighlightClass = (row: V2CustomerDetailRow) => {
@@ -311,6 +337,34 @@ export default function V2CustomerManageTable({
 
   const hasActionColumn = canDelete || (showDocsMatrix && docsInteractive);
   const showProcessingHandler = !partnerReferredView;
+  const showExecutiveAssigneeColumn =
+    viewerRole === "관리자" ||
+    viewerRole === "총괄공식파트너" ||
+    viewerRole === "대표노무사";
+  const assigneeColumnLabel = showExecutiveAssigneeColumn ? "현재 담당자" : "처리 담당자";
+
+  const renderAssigneeCell = (row: V2CustomerDetailRow) => {
+    const select = (
+      <V2ProcessingAssignSelect
+        leadId={row.id}
+        assignedUserId={row.assignedUserId}
+        assignedUserName={row.assignedUserName}
+        users={users}
+        editable={canAssign}
+        compact
+        onAssigned={(patch) => applyAssignment(row.id, patch)}
+      />
+    );
+
+    if (!showExecutiveAssigneeColumn) return select;
+
+    return (
+      <div className="flex flex-col gap-1.5 min-w-0">
+        <AssigneeNameBadge name={row.assignedUserName} />
+        {canAssign ? select : null}
+      </div>
+    );
+  };
 
   if (isLoading && rows.length === 0) {
     return (
@@ -512,17 +566,34 @@ export default function V2CustomerManageTable({
                   {showProcessingHandler && (
                     <div className="mt-2.5">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                        처리 담당자
+                        {assigneeColumnLabel}
                       </p>
-                      <V2ProcessingAssignSelect
-                        leadId={row.id}
-                        assignedUserId={row.assignedUserId}
-                        assignedUserName={row.assignedUserName}
-                        users={users}
-                        editable={canAssign}
-                        compact
-                        onAssigned={(patch) => applyAssignment(row.id, patch)}
-                      />
+                      {showExecutiveAssigneeColumn ? (
+                        <div className="flex flex-col gap-1.5">
+                          <AssigneeNameBadge name={row.assignedUserName} />
+                          {canAssign && (
+                            <V2ProcessingAssignSelect
+                              leadId={row.id}
+                              assignedUserId={row.assignedUserId}
+                              assignedUserName={row.assignedUserName}
+                              users={users}
+                              editable
+                              compact
+                              onAssigned={(patch) => applyAssignment(row.id, patch)}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <V2ProcessingAssignSelect
+                          leadId={row.id}
+                          assignedUserId={row.assignedUserId}
+                          assignedUserName={row.assignedUserName}
+                          users={users}
+                          editable={canAssign}
+                          compact
+                          onAssigned={(patch) => applyAssignment(row.id, patch)}
+                        />
+                      )}
                     </div>
                   )}
 
@@ -603,16 +674,8 @@ export default function V2CustomerManageTable({
                     <PartnerConfirmBadge onClick={() => openDetail(row)} />
                   </FluidRowField>
                   {showProcessingHandler && (
-                    <FluidRowField label="처리 담당자" className="shrink-0 min-w-[120px]">
-                      <V2ProcessingAssignSelect
-                        leadId={row.id}
-                        assignedUserId={row.assignedUserId}
-                        assignedUserName={row.assignedUserName}
-                        users={users}
-                        editable={canAssign}
-                        compact
-                        onAssigned={(patch) => applyAssignment(row.id, patch)}
-                      />
+                    <FluidRowField label={assigneeColumnLabel} className="shrink-0 min-w-[120px]">
+                      {renderAssigneeCell(row)}
                     </FluidRowField>
                   )}
                   <FluidRowField label="날짜" className="shrink-0 w-32">
@@ -739,7 +802,7 @@ export default function V2CustomerManageTable({
                   </th>
                   {showProcessingHandler && (
                     <th className="text-left py-3 px-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                      처리 담당자
+                      {assigneeColumnLabel}
                     </th>
                   )}
                   {showDocsMatrix && (
@@ -794,15 +857,7 @@ export default function V2CustomerManageTable({
                         className="py-3 px-2 align-middle"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <V2ProcessingAssignSelect
-                          leadId={row.id}
-                          assignedUserId={row.assignedUserId}
-                          assignedUserName={row.assignedUserName}
-                          users={users}
-                          editable={canAssign}
-                          compact
-                          onAssigned={(patch) => applyAssignment(row.id, patch)}
-                        />
+                        {renderAssigneeCell(row)}
                       </td>
                     )}
                     {showDocsMatrix && (

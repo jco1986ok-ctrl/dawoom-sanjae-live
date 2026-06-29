@@ -94,6 +94,10 @@ export async function assignLeadUser(
   revalidatePath("/dashboard-v2");
   revalidatePath("/dashboard-v2/my-board");
   revalidatePath("/dashboard/my-board");
+  revalidatePath("/dashboard/admin");
+  revalidatePath("/dashboard/head-partner");
+  revalidatePath("/dashboard/head-attorney");
+  revalidatePath("/dashboard/master");
   return { success: true };
 }
 

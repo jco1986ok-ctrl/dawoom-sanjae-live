@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
       result = await fetchDashboardLeads(admin, {
         admin: true,
         withPartner: true,
+        withAssigneeJoin: true,
         assignedTo: assignedParam ?? undefined,
         limit: 500,
       });
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
     if (wantEnrich && leads.length > 0) {
       try {
         const relatedUserIds = leads.flatMap((l) =>
-          [l.referred_by_user_id, l.master_agent_id, l.assigned_to].filter(
+          [l.referred_by_user_id, l.master_agent_id, l.assigned_to, l.assigned_user_id].filter(
             (id): id is string => Boolean(id),
           ),
         );

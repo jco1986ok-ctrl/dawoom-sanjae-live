@@ -24,9 +24,10 @@ export function buildV2CustomerDetailRow(
 ): V2CustomerDetailRow {
   const assignedUserId = lead.assigned_user_id ?? null;
   const assignedUserName =
-    assignedUserId && users
+    lead.assigned_user_name ??
+    (assignedUserId && users
       ? (users.find((u) => u.id === assignedUserId)?.name ?? null)
-      : null;
+      : null);
 
   return {
     ...buildCustomerDetailRow(lead),

@@ -36,6 +36,8 @@ export interface LeadDetail {
   assigned_to?: string | null;
   assigned_attorney_name?: string | null;
   assigned_user_id?: string | null;
+  /** users 조인 — 처리 담당자 표시명 */
+  assigned_user_name?: string | null;
   assignment_memo?: string | null;
   is_read?: boolean | null;
   current_owner_role?: CollaborationOwnerRole | string | null;

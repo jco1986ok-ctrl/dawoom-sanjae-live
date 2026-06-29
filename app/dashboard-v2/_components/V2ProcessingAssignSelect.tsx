@@ -39,16 +39,20 @@ export default function V2ProcessingAssignSelect({
   const [error, setError] = useState("");
 
   if (!editable) {
+    if (!assignedUserName) {
+      return (
+        <span className={cn("text-xs text-slate-400", className)}>미배정</span>
+      );
+    }
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 text-xs font-semibold",
-          assignedUserName ? "text-slate-700" : "text-slate-400",
+          "inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700",
           className,
         )}
       >
-        <UserRound className="w-3.5 h-3.5 shrink-0 opacity-60" />
-        {assignedUserName ?? "미배정"}
+        <UserRound className="w-3 h-3 shrink-0 opacity-60" />
+        {assignedUserName}
       </span>
     );
   }

@@ -38,11 +38,22 @@ export const LEADS_LIST_SELECT_ADMIN_LEGACY =
 export const LEADS_LIST_SELECT_CORE_ADMIN_LEGACY =
   `${LEADS_LIST_SELECT_CORE_WITH_PARTNER_LEGACY}, assigned_to` as const;
 
+/** V2 처리 담당자(users) 조인 — PostgREST embed */
+export const LEADS_ASSIGNEE_EMBED = "assignee:users!assigned_user_id(name)" as const;
+
+export function withLeadsAssigneeJoin(select: string): string {
+  return `${select}, ${LEADS_ASSIGNEE_EMBED}`;
+}
+
 /** pdf_url 포함 → 코어 순서로 SELECT 시도 */
 export const LEADS_LIST_SELECT_FALLBACKS = [
+  withLeadsAssigneeJoin(LEADS_LIST_SELECT_ADMIN),
   LEADS_LIST_SELECT_ADMIN,
+  withLeadsAssigneeJoin(LEADS_LIST_SELECT_CORE_ADMIN),
   LEADS_LIST_SELECT_CORE_ADMIN,
+  withLeadsAssigneeJoin(LEADS_LIST_SELECT_ADMIN_LEGACY),
   LEADS_LIST_SELECT_ADMIN_LEGACY,
+  withLeadsAssigneeJoin(LEADS_LIST_SELECT_CORE_ADMIN_LEGACY),
   LEADS_LIST_SELECT_CORE_ADMIN_LEGACY,
 ] as const;
 

@@ -6,6 +6,7 @@ import {
   isPartnerScopedRole,
 } from "@/lib/dashboard-data-scope";
 import { fetchHeadPartnerNetworkUserRows } from "@/lib/head-partner-network";
+import { V2_PROCESSING_HANDLER_DB_ROLES } from "@/lib/v2-assignable-users";
 import type { LineageUserRow } from "@/lib/lead-lineage";
 import type { UserRole } from "@/lib/types";
 
@@ -54,11 +55,26 @@ export async function fetchUsersForLeadLineage(
   }
 
   if (isHeadPartnerRole(role)) {
-    const rows = await fetchHeadPartnerNetworkUserRows<Record<string, unknown>>(
-      viewerId,
-      LINEAGE_SELECT,
-    );
-    return mapLineageRows(rows);
+    const admin = createAdminClient();
+    const [networkRows, { data: handlerRows = [] }] = await Promise.all([
+      fetchHeadPartnerNetworkUserRows<Record<string, unknown>>(viewerId, LINEAGE_SELECT),
+      admin
+        .from("users")
+        .select(LINEAGE_SELECT)
+        .in("role", [...V2_PROCESSING_HANDLER_DB_ROLES])
+        .eq("is_active", true),
+    ]);
+    const byId = new Map<string, LineageUserRow>();
+    for (const row of [...networkRows, ...handlerRows]) {
+      const mapped = mapLineageRows([row])[0];
+      if (mapped) byId.set(mapped.id, mapped);
+    }
+    for (const id of relatedUserIds) {
+      if (byId.has(id)) continue;
+      const fetched = await fetchLineageUsersByIds([id]);
+      for (const u of fetched) byId.set(u.id, u);
+    }
+    return [...byId.values()];
   }
 
   if (isPartnerScopedRole(role)) {

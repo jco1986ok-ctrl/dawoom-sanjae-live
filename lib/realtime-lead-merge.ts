@@ -46,6 +46,7 @@ export function realtimeRowToLeadDetail(row: RealtimeLeadRow): LeadDetail {
     referred_by_user_id: nullableStr(row.referred_by_user_id),
     assigned_to: nullableStr(row.assigned_to),
     assigned_user_id: nullableStr(row.assigned_user_id),
+    assigned_user_name: nullableStr(row.assigned_user_name),
     assignment_memo: nullableStr(row.assignment_memo),
     is_read: row.is_read === undefined || row.is_read === null ? true : Boolean(row.is_read),
     current_owner_role: nullableStr(row.current_owner_role),
@@ -91,6 +92,13 @@ export function mergeLeadFromRealtime(
       row.assigned_user_id !== undefined
         ? nullableStr(row.assigned_user_id)
         : existing.assigned_user_id,
+    assigned_user_name:
+      row.assigned_user_id !== undefined &&
+      nullableStr(row.assigned_user_id) !== existing.assigned_user_id
+        ? nullableStr(row.assigned_user_name)
+        : row.assigned_user_name !== undefined
+          ? nullableStr(row.assigned_user_name) ?? existing.assigned_user_name
+          : existing.assigned_user_name,
     assignment_memo:
       row.assignment_memo !== undefined
         ? nullableStr(row.assignment_memo)

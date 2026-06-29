@@ -21,6 +21,7 @@ import {
   isPartnerScopedRole,
 } from "@/lib/dashboard-data-scope";
 import { fetchHeadPartnerNetworkUserRows } from "@/lib/head-partner-network";
+import { V2_PROCESSING_HANDLER_DB_ROLES } from "@/lib/v2-assignable-users";
 
 import { OVERVIEW_STATUS_META } from "@/lib/lead-status";
 
@@ -75,6 +76,7 @@ function collectLeadRelatedUserIds(leads: LeadDetail[]): string[] {
     if (lead.referred_by_user_id) ids.add(lead.referred_by_user_id);
     if (lead.master_agent_id) ids.add(lead.master_agent_id);
     if (lead.assigned_to) ids.add(lead.assigned_to);
+    if (lead.assigned_user_id) ids.add(lead.assigned_user_id);
   }
   return [...ids];
 }
@@ -103,6 +105,7 @@ async function loadLeadsForViewer(
     const result = await fetchDashboardLeads(adminClient, {
       admin: true,
       withPartner: true,
+      withAssigneeJoin: true,
       limit,
     });
     if (result.error) {
@@ -166,9 +169,13 @@ async function loadUsersForViewer(
   }
 
   if (isHeadPartnerRole(role)) {
-    return mapUserRows(
-      await fetchHeadPartnerNetworkUserRows<Record<string, unknown>>(viewerId, USER_SELECT),
-    );
+    const [networkUsers, handlerUsers] = await Promise.all([
+      mapUserRows(
+        await fetchHeadPartnerNetworkUserRows<Record<string, unknown>>(viewerId, USER_SELECT),
+      ),
+      loadProcessingHandlerUsers(),
+    ]);
+    return mergeUserRowsById(networkUsers, handlerUsers);
   }
 
   if (isPartnerScopedRole(role)) {
@@ -192,6 +199,30 @@ async function loadUsersForViewer(
     console.error("[loadUnifiedManagementData] session users 조회 실패:", error);
   }
   return mapUserRows(data);
+}
+
+async function loadProcessingHandlerUsers(): Promise<DbUserRow[]> {
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient
+    .from("users")
+    .select(USER_SELECT)
+    .in("role", [...V2_PROCESSING_HANDLER_DB_ROLES])
+    .eq("is_active", true)
+    .order("name");
+  if (error) {
+    console.error("[loadUnifiedManagementData] handler users 조회 실패:", error);
+  }
+  return mapUserRows(data);
+}
+
+function mergeUserRowsById(...groups: DbUserRow[][]): DbUserRow[] {
+  const byId = new Map<string, DbUserRow>();
+  for (const group of groups) {
+    for (const user of group) {
+      byId.set(user.id, user);
+    }
+  }
+  return [...byId.values()];
 }
 
 export async function loadUnifiedManagementData(
