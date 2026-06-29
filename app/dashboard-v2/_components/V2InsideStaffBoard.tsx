@@ -65,9 +65,7 @@ interface Props {
   canChangeStatus: boolean;
   canWriteMemo: boolean;
   viewerRole: string;
-  canSendReminder?: boolean;
   canAssign?: boolean;
-  canCollaborate?: boolean;
 }
 
 export default function V2InsideStaffBoard({
@@ -78,9 +76,7 @@ export default function V2InsideStaffBoard({
   canChangeStatus,
   canWriteMemo,
   viewerRole,
-  canSendReminder = false,
   canAssign = false,
-  canCollaborate = false,
 }: Props) {
   const [detailTarget, setDetailTarget] = useState<V2CustomerDetailRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);

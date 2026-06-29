@@ -57,7 +57,7 @@ export interface DashboardPermissions {
 
   canChangePartnerLineage: boolean;
 
-  /** 담당자 배정 · 바통 터치 · 독촉 */
+  /** 담당자 배정 · 바통 터치 */
   canAssignLead: boolean;
 
   /** 보상금·수임료 등 재무 UI */

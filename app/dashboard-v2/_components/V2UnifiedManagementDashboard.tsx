@@ -30,9 +30,7 @@ import AdminPdfCalibrateButton from "@/app/dashboard/admin/_components/AdminPdfC
 import V2OverviewPanel from "./V2OverviewPanel";
 import V2CustomerCollaborationSection from "./V2CustomerCollaborationSection";
 import V2DailyBriefingModal from "./V2DailyBriefingModal";
-import V2NotificationToastListener from "./V2NotificationToastListener";
 import V2MyBoardTabPanel from "./V2MyBoardTabPanel";
-import { shouldUseV2MyTasksView } from "@/lib/v2-my-tasks";
 import { V2_PAGE_BG, v2SurfaceCard } from "../_lib/v2-ui";
 import { cn } from "@/lib/utils";
 
@@ -119,7 +117,6 @@ export default function V2UnifiedManagementDashboard({
     return user?.agent_id ?? adminAgentId;
   }, [enrichedUsers, simulation.effectiveViewerId, adminAgentId]);
 
-  const myTasksOnly = shouldUseV2MyTasksView(currentUserRole);
   const canAssign = permissions.canAssignLead;
 
   return (
@@ -128,11 +125,6 @@ export default function V2UnifiedManagementDashboard({
         leads={displayLeads}
         viewerUserId={simulation.effectiveViewerId}
         currentUserRole={currentUserRole}
-      />
-      <V2NotificationToastListener
-        notifyUserId={simulation.effectiveViewerId}
-        simulateUser={simulation.isSimulating}
-        enabled={myTasksOnly}
       />
       <div className="bg-[#0f2d5e] pt-8 pb-10">
         <div className="w-full">

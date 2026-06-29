@@ -19,10 +19,6 @@ interface Props {
   canWriteMemo: boolean;
   canDelete: boolean;
   canAssign?: boolean;
-  /** @deprecated 라이브 호환 — 무시 */
-  canSendReminder?: boolean;
-  /** @deprecated 라이브 호환 — 무시 */
-  canCollaborate?: boolean;
 }
 
 export default function V2CustomerCollaborationSection({
