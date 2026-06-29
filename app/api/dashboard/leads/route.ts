@@ -4,12 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchDashboardLeads } from "@/lib/fetch-dashboard-leads";
 import { enrichLeads } from "@/lib/enrich-leads";
 import { fetchUsersForLeadLineage } from "@/lib/dashboard-users";
-import { isHeadPartnerRole } from "@/lib/dashboard-data-scope";
-import { fetchHeadPartnerNetworkUserIds } from "@/lib/head-partner-network";
 import type { UserRole } from "@/lib/types";
 
 /** Service Role로 전체 leads 조회 가능한 역할 */
-const ORG_WIDE_ACCESS_ROLES = new Set<UserRole>(["관리자", "대표노무사"]);
+const ORG_WIDE_ACCESS_ROLES = new Set<UserRole>(["관리자", "대표노무사", "총괄공식파트너"]);
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -53,17 +51,6 @@ export async function GET(request: NextRequest) {
         admin: true,
         withPartner: true,
         assignedTo: assignedParam ?? (profile.id as string),
-        limit: 500,
-      });
-    } else if (isHeadPartnerRole(role)) {
-      const admin = createAdminClient();
-      const networkUserIds = Array.from(
-        await fetchHeadPartnerNetworkUserIds(profile.id as string),
-      );
-      result = await fetchDashboardLeads(admin, {
-        admin: true,
-        withPartner: true,
-        networkUserIds,
         limit: 500,
       });
     } else {
