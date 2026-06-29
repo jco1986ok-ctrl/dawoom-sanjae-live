@@ -57,7 +57,7 @@ export interface DashboardPermissions {
 
   canChangePartnerLineage: boolean;
 
-  /** 담당자 배정 · 바통 터치 */
+  /** 처리 담당자 배정 · 수정 */
   canAssignLead: boolean;
 
   /** 보상금·수임료 등 재무 UI */
@@ -66,6 +66,19 @@ export interface DashboardPermissions {
 }
 
 
+
+/** 처리 담당자(assigned_user_id) 배정·수정 — DB 역할 기준 */
+export const LEAD_ASSIGN_EDIT_DB_ROLES: UserRole[] = [
+  "관리자",
+  "대표노무사",
+  "총괄공식파트너",
+];
+
+export function canEditLeadAssigneeByDbRole(
+  role: string | null | undefined,
+): boolean {
+  return LEAD_ASSIGN_EDIT_DB_ROLES.includes(role as UserRole);
+}
 
 export function mapUserRoleToTestRole(role: UserRole): DashboardTestRole {
 
@@ -338,7 +351,7 @@ export function getDashboardPermissions(role: DashboardTestRole): DashboardPermi
 
         canChangePartnerLineage: false,
 
-        canAssignLead: true,
+        canAssignLead: false,
 
         canViewFinancialData: true,
 

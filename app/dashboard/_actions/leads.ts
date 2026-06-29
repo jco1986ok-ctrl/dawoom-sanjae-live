@@ -8,6 +8,7 @@ import { isDiseaseCategory, type DiseaseCategory } from "@/lib/disease-category"
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/types";
+import { canEditLeadAssigneeByDbRole } from "@/lib/dashboard-rbac";
 import { revalidatePath } from "next/cache";
 
 const STATUS_EDIT_ROLES: UserRole[] = ["관리자", "노무사", "대표노무사", "총괄공식파트너"];
@@ -79,10 +80,35 @@ async function assertCanEditLeadStatus(
   return { ok: true, role, userId: user.id, authorName };
 }
 
+async function assertCanAssignLead(): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "로그인이 필요합니다." };
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile || !canEditLeadAssigneeByDbRole(profile.role as string)) {
+    return { ok: false, error: "처리 담당자 배정 권한이 없습니다." };
+  }
+
+  return { ok: true };
+}
+
 export async function assignLead(
   leadId: string,
   assignedToId: string | null,
 ): Promise<{ success: boolean; error?: string }> {
+  const auth = await assertCanAssignLead();
+  if (!auth.ok) return { success: false, error: auth.error };
+
   try {
     const adminClient = createAdminClient();
     const { error } = await adminClient

@@ -3,11 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isDashboardV2MasterRole } from "@/lib/dashboard-v2-access";
+import { canEditLeadAssigneeByDbRole } from "@/lib/dashboard-rbac";
 import { isV2ProcessingHandlerRole } from "@/lib/v2-assignable-users";
 import { appendAssignmentLogToNotes } from "@/lib/lead-consult-memos";
 
-async function requireV2Access() {
+async function requireCanAssignLead() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -20,8 +20,8 @@ async function requireV2Access() {
     .eq("id", user.id)
     .single();
 
-  if (!profile || !isDashboardV2MasterRole(profile.role as string)) {
-    return { error: "V2 테스트 보드 접근 권한이 없습니다." as const };
+  if (!profile || !canEditLeadAssigneeByDbRole(profile.role as string)) {
+    return { error: "처리 담당자 배정 권한이 없습니다." as const };
   }
 
   return { user, profile };
@@ -32,7 +32,7 @@ export async function assignLeadUser(
   assignedUserId: string,
   memo: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const auth = await requireV2Access();
+  const auth = await requireCanAssignLead();
   if ("error" in auth) return { success: false, error: auth.error };
 
   if (!assignedUserId?.trim()) {
@@ -101,10 +101,13 @@ export async function markLeadAssignmentRead(
   leadId: string,
   viewerUserId?: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const auth = await requireV2Access();
-  if ("error" in auth) return { success: false, error: auth.error };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "로그인이 필요합니다." };
 
-  const readerId = viewerUserId ?? auth.user.id;
+  const readerId = viewerUserId ?? user.id;
   const admin = createAdminClient();
   const { data: lead } = await admin
     .from("leads")

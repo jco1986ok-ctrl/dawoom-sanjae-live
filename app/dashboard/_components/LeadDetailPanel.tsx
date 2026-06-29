@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { X, Phone, Calendar, Tag, Loader2, CheckCircle2 } from "lucide-react";
-import { updateLeadStatus, assignLead } from "../_actions/leads";
+import { X, Phone, Calendar, Tag } from "lucide-react";
+import { InflowLinkBadge } from "@/components/LeadAttributionCell";
+import { LineagePathBadge } from "@/components/LineagePathBadge";
+import type { AgentAccountInfo, InflowInfo } from "@/lib/lead-attribution";
+import { describeInflowLink } from "@/lib/lead-attribution";
+import { getLeadStatusBadgeClass } from "@/lib/lead-status";
+import { LeadStatusSelect, LEAD_STATUS_OPTIONS } from "./LeadStatusSelect";
+import { canEditLeadAssigneeByDbRole } from "@/lib/dashboard-rbac";
+import { assignLead } from "../_actions/leads";
+import { SurveyDetailReport } from "./SurveyDetailReport";
+import { ContractPdfPreviewBlock } from "./ContractPdfPreviewBlock";
+import { parseSurveyFieldMap } from "@/lib/lead-survey-report";
 
 // ── 타입 ─────────────────────────────────────────────────────
 export interface LeadDetail {
@@ -10,12 +20,24 @@ export interface LeadDetail {
   customer_name: string;
   phone: string | null;
   disease_name: string | null;
+  disease_category?: string | null;
+  fee_amount?: number | null;
   consultation_status: string;
   created_at: string;
   referral_source: string | null;
+  referrer?: string | null;
   notes: string | null;
+  pdf_url?: string | null;
+  has_weim?: boolean | null;
+  docs_status?: import("@/lib/lead-docs-status").LeadDocsStatus | null;
+  other_docs?: unknown;
   referred_by_user_id?: string | null;
   partner_name?: string | null;
+  partner_agent_id?: string | null;
+  inflow?: InflowInfo;
+  agent?: AgentAccountInfo;
+  lineage?: import("@/lib/user-lineage").UserLineageNode[];
+  lineage_label?: string;
   parent_partner_name?: string | null;
   /** true = 현재 로그인한 뷰어 본인이 직접 접수한 건 */
   is_viewer_direct?: boolean;
@@ -29,8 +51,7 @@ export interface AttorneyOption {
   name: string;
 }
 
-const STATUS_OPTIONS = ["신규", "연락대기", "상담중", "계약완료", "보류", "종결"] as const;
-type LeadStatus = (typeof STATUS_OPTIONS)[number];
+type LeadStatus = (typeof LEAD_STATUS_OPTIONS)[number];
 
 // ── Notes 파서 ───────────────────────────────────────────────
 interface Field { key: string; value: string }
@@ -50,14 +71,6 @@ function getField(fields: Field[], key: string): string | null {
   return fields.find((f) => f.key === key)?.value ?? null;
 }
 
-// ── 카테고리 정의 ─────────────────────────────────────────────
-const CATEGORIES: { label: string; emoji: string; keys: string[] }[] = [
-  { label: "인적사항",  emoji: "👤", keys: ["나이", "직업"] },
-  { label: "근무이력",  emoji: "🏢", keys: ["근무기간", "현재 상태", "회사 인지", "산재 논의", "회사 반응"] },
-  { label: "의료정보",  emoji: "🏥", keys: ["진단 여부", "병원"] },
-  { label: "산재 판단", emoji: "⚖️", keys: ["업무 연관성", "산재 신청 의향"] },
-];
-
 // ── 뱃지 색상 맵 ─────────────────────────────────────────────
 const DIAGNOSIS_COLOR: Record<string, string> = {
   "진단 받음": "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -72,12 +85,11 @@ const INTENT_COLOR: Record<string, string> = {
 };
 
 const STATUS_CURRENT_STYLE: Record<string, string> = {
-  신규:     "bg-blue-100 text-blue-700 border-blue-200",
-  연락대기: "bg-amber-100 text-amber-700 border-amber-200",
-  상담중:   "bg-purple-100 text-purple-700 border-purple-200",
-  계약완료: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  보류:     "bg-slate-100 text-slate-500 border-slate-200",
-  종결:     "bg-red-100 text-red-500 border-red-200",
+  ...Object.fromEntries(
+    LEAD_STATUS_OPTIONS.map((s) => [s, `${getLeadStatusBadgeClass(s)} border border-current/20`]),
+  ),
+  연락대기: "bg-orange-100 text-orange-700 border-orange-200",
+  종결: "bg-slate-100 text-slate-500 border-slate-200",
 };
 
 // ── 날짜 포맷 ─────────────────────────────────────────────────
@@ -101,13 +113,10 @@ interface Props {
 // ════════════════════════════════════════════════════════════
 export function LeadDetailPanel({ lead, role, onClose, onStatusChanged, attorneys = [], onAssigned }: Props) {
   const canEdit   = role === "관리자" || role === "노무사" || role === "대표노무사" || role === "일반노무사";
-  const canAssign = (role === "관리자" || role === "대표노무사") && attorneys.length > 0;
+  const canAssign = canEditLeadAssigneeByDbRole(role) && attorneys.length > 0;
   const isOpen    = lead !== null;
 
   const [selectedStatus,   setSelectedStatus]   = useState<LeadStatus>("신규");
-  const [saveResult,       setSaveResult]        = useState<"idle" | "saved" | "error">("idle");
-  const [errorMsg,         setErrorMsg]          = useState("");
-  const [isPending,        startTransition]      = useTransition();
 
   // 배당 상태
   const [selectedAttorney, setSelectedAttorney] = useState<string>("");
@@ -118,8 +127,6 @@ export function LeadDetailPanel({ lead, role, onClose, onStatusChanged, attorney
   useEffect(() => {
     if (lead) {
       setSelectedStatus(lead.consultation_status as LeadStatus);
-      setSaveResult("idle");
-      setErrorMsg("");
       setSelectedAttorney(lead.assigned_to ?? "");
       setAssignResult("idle");
       setAssignError("");
@@ -149,30 +156,15 @@ export function LeadDetailPanel({ lead, role, onClose, onStatusChanged, attorney
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  function handleSave() {
-    if (!lead || !canEdit) return;
-    setSaveResult("idle");
-    startTransition(async () => {
-      const result = await updateLeadStatus(lead.id, selectedStatus);
-      if (result.success) {
-        setSaveResult("saved");
-        onStatusChanged?.(lead.id, selectedStatus);
-      } else {
-        setSaveResult("error");
-        setErrorMsg(result.error ?? "저장 실패");
-      }
-    });
-  }
-
   // Notes 파싱
   const fields    = lead ? parseNotes(lead.notes) : [];
-  const hasParsed = fields.length > 0;
+  const surveyMap = lead ? parseSurveyFieldMap(lead.notes) : {};
+  const hasParsed = fields.length > 0 || Object.keys(surveyMap).length > 0;
 
   // 핵심 3개 뱃지값
-  const diagnosisVal = getField(fields, "진단 여부");
-  const workYearsVal = getField(fields, "근무기간");
+  const diagnosisVal = getField(fields, "진단 여부") ?? surveyMap["진단명"] ?? null;
+  const workYearsVal = getField(fields, "근무기간") ?? surveyMap["근무 기간"] ?? null;
   const intentVal    = getField(fields, "산재 신청 의향");
-  const memoVal      = getField(fields, "고객 추가 의견");
 
   return (
     <>
@@ -273,115 +265,58 @@ export function LeadDetailPanel({ lead, role, onClose, onStatusChanged, attorney
                 <InfoChip icon={<Calendar className="w-3.5 h-3.5" />} label="접수일시">
                   {formatDateTime(lead.created_at)}
                 </InfoChip>
-                <InfoChip icon={<Tag className="w-3.5 h-3.5" />} label="유입경로">
-                  {lead.referral_source
-                    ? <span className="font-mono font-semibold">{lead.referral_source}</span>
-                    : <span className="text-slate-300">직접접수</span>
-                  }
+                <InfoChip icon={<Tag className="w-3.5 h-3.5" />} label="무료조회 유입" className="col-span-2">
+                  <InflowLinkBadge
+                    inflow={
+                      lead.inflow ??
+                      describeInflowLink(lead.referral_source, lead.referrer)
+                    }
+                  />
+                </InfoChip>
+                <InfoChip icon={<span className="text-xs">🤝</span>} label="유입 계정 라인" className="col-span-2">
+                  <LineagePathBadge lineage={lead.lineage ?? []} />
                 </InfoChip>
                 <InfoChip icon={<span className="text-xs">🦴</span>} label="질환" className="col-span-2">
                   {lead.disease_name ?? "—"}
                 </InfoChip>
               </div>
 
-              {/* ━ 설문 상세 (파싱 성공 시 구조화) ━━━━━━━━━━━ */}
-              {hasParsed ? (
-                <>
-                  <SectionTitle>설문 상세 내용</SectionTitle>
+              <ContractPdfPreviewBlock
+                leadId={lead.id}
+                customerName={lead.customer_name}
+                hasPdf={Boolean(lead.pdf_url || lead.has_weim)}
+              />
 
-                  {/* 2열 카테고리 그리드 */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {CATEGORIES.map((cat) => {
-                      const catFields = cat.keys
-                        .map((k) => ({ key: k, value: getField(fields, k) }))
-                        .filter((f) => f.value !== null) as { key: string; value: string }[];
-                      if (catFields.length === 0) return null;
-                      return (
-                        <div key={cat.label} className="bg-slate-50 rounded-xl p-3 flex flex-col gap-2">
-                          <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
-                            <span>{cat.emoji}</span> {cat.label}
-                          </span>
-                          <div className="flex flex-col gap-1.5">
-                            {catFields.map((f) => (
-                              <div key={f.key} className="flex flex-col gap-0.5">
-                                <span className="text-[10px] text-slate-400">{f.key}</span>
-                                <span className="text-xs font-semibold text-slate-700 leading-relaxed">{f.value}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* 고객 추가 메모 — 전폭 */}
-                  {memoVal && (
-                    <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-                      <span className="text-xs font-semibold text-amber-600 flex items-center gap-1 mb-2">
-                        📝 고객 추가 의견
-                      </span>
-                      <p className="text-sm text-amber-900 leading-relaxed whitespace-pre-wrap">{memoVal}</p>
-                    </div>
-                  )}
-                </>
-              ) : lead.notes ? (
-                /* 파싱 실패 시 원문 표시 */
-                <>
-                  <SectionTitle>설문 상세 내용</SectionTitle>
-                  <div className="bg-slate-50 rounded-xl px-4 py-4">
-                    <pre className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-sans">{lead.notes}</pre>
-                  </div>
-                </>
-              ) : (
-                <div className="bg-slate-50 rounded-xl px-4 py-8 flex items-center justify-center">
-                  <p className="text-sm text-slate-300">작성된 설문 내용이 없습니다.</p>
-                </div>
-              )}
+              {/* ━ 설문 상세 보고서 ━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+              <SectionTitle>설문 상세 내용</SectionTitle>
+              <SurveyDetailReport
+                notes={lead.notes}
+                diseaseName={lead.disease_name}
+                className="mt-0"
+              />
             </>
           )}
         </div>
 
-        {/* ━━━ 푸터: 상태 변경 (관리자·노무사 전용) ━━━━━━━━ */}
+        {/* ━━━ 푸터: 상담·계약 상태 (노무사·대표노무사·관리자) ━━━━━━━━ */}
         {canEdit && lead && (
-          <div className="flex-shrink-0 border-t border-slate-100 px-4 py-4 bg-white">
+          <div className="flex-shrink-0 sticky bottom-0 z-10 border-t border-slate-200 px-4 py-4 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
             <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2.5">
-              상담 상태 변경
+              상담 · 계약 상태
             </p>
-            <div className="flex gap-2">
-              <select
-                value={selectedStatus}
-                onChange={(e) => {
-                  setSelectedStatus(e.target.value as LeadStatus);
-                  setSaveResult("idle");
-                }}
-                disabled={isPending}
-                className="flex-1 text-sm font-semibold border-2 border-slate-200 rounded-xl px-3 py-2.5
-                           focus:border-[#0f2d5e] focus:outline-none transition-colors bg-white
-                           disabled:opacity-50 cursor-pointer"
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleSave}
-                disabled={isPending || selectedStatus === lead.consultation_status}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold
-                           bg-[#0f2d5e] text-white hover:bg-[#1a3d7a] transition-colors
-                           disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-              >
-                {isPending
-                  ? <><Loader2 className="w-4 h-4 animate-spin" />저장 중</>
-                  : saveResult === "saved"
-                    ? <><CheckCircle2 className="w-4 h-4 text-emerald-400" />저장됨</>
-                    : "저장"
-                }
-              </button>
-            </div>
-            {saveResult === "error" && <p className="text-xs text-red-500 mt-1.5">{errorMsg}</p>}
-            {saveResult === "saved" && (
-              <p className="text-xs text-emerald-600 mt-1.5">✓ 상태가 변경되었습니다. 목록에 즉시 반영됩니다.</p>
-            )}
+            <LeadStatusSelect
+              leadId={lead.id}
+              value={selectedStatus}
+              stopPropagation={false}
+              className="w-full"
+              onChanged={(newStatus) => {
+                setSelectedStatus(newStatus as LeadStatus);
+                onStatusChanged?.(lead.id, newStatus);
+              }}
+            />
+            <p className="text-xs text-slate-500 mt-2">
+              상태를 선택하면 즉시 저장됩니다. (신규 → 부재중 → 상담중 → 계약완료 → 서류준비 → 공단심사 등)
+            </p>
           </div>
         )}
 
@@ -430,7 +365,7 @@ export function LeadDetailPanel({ lead, role, onClose, onStatusChanged, attorney
 
         {!canEdit && lead && (
           <div className="flex-shrink-0 border-t border-slate-100 px-4 py-3 bg-slate-50">
-            <p className="text-xs text-slate-400 text-center">상태 변경은 관리자 또는 노무사만 가능합니다.</p>
+            <p className="text-xs text-slate-400 text-center">상태 변경은 관리자·노무사·대표 노무사만 가능합니다.</p>
           </div>
         )}
       </div>
