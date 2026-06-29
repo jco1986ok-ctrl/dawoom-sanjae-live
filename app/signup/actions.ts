@@ -1,6 +1,12 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  buildPartnerSignupUserRow,
+  PARTNER_SIGNUP_FORBIDDEN_ROLES,
+  PARTNER_SIGNUP_ROLE,
+  resolvePartnerInviteCode,
+} from "@/lib/partner-signup";
 import type { UserRole } from "@/lib/types";
 
 export type PartnerSignupResult =
@@ -8,9 +14,6 @@ export type PartnerSignupResult =
   | { success: false; error: string };
 
 const INVITER_ROLES: UserRole[] = ["관리자", "총괄공식파트너", "총판영업자", "하위영업자"];
-
-/** 초대 링크 가입 시 부여되는 유일한 권한 (UI 표기: 제휴 멤버). 클라이언트에서 변경 불가. */
-const SIGNUP_FIXED_ROLE = "하위영업자" as const satisfies UserRole;
 
 function generateAgentId(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -29,10 +32,24 @@ export async function partnerSignupAction(
   const password = (formData.get("password") as string)?.trim() ?? "";
   const confirmPassword = (formData.get("confirmPassword") as string)?.trim() ?? "";
   const name = (formData.get("name") as string)?.trim() ?? "";
-  const inviteCode = (formData.get("invite") as string)?.trim() ?? "";
+  const inviteCode = resolvePartnerInviteCode(
+    (formData.get("invite") as string) ?? "",
+    (formData.get("ref") as string) ?? "",
+  );
 
-  // 보안: role 필드 조작 시도 차단 (가입 권한은 서버에서만 SIGNUP_FIXED_ROLE로 고정)
-  if (formData.get("role")) {
+  // 보안: 클라이언트 role·권한 필드 조작 차단
+  for (const key of ["role", "user_role", "master", "is_admin", "is_master"]) {
+    const value = formData.get(key);
+    if (value != null && String(value).trim() !== "") {
+      return { success: false, error: "잘못된 요청입니다." };
+    }
+  }
+
+  const requestedRole = (formData.get("role") as string | null)?.trim();
+  if (
+    requestedRole &&
+    (PARTNER_SIGNUP_FORBIDDEN_ROLES as readonly string[]).includes(requestedRole)
+  ) {
     return { success: false, error: "잘못된 요청입니다." };
   }
 
@@ -48,13 +65,10 @@ export async function partnerSignupAction(
 
   const adminClient = createAdminClient();
 
-  // agent_id 대소문자·공백 차이 허용
-  const normalizedInvite = inviteCode.trim().toUpperCase();
-
   const { data: inviter, error: inviterError } = await adminClient
     .from("users")
     .select("id, name, role, is_active, agent_id")
-    .ilike("agent_id", normalizedInvite)
+    .ilike("agent_id", inviteCode)
     .maybeSingle();
 
   if (inviterError || !inviter) {
@@ -88,6 +102,16 @@ export async function partnerSignupAction(
     email,
     password,
     email_confirm: true,
+    user_metadata: {
+      signup_channel: "partner_invite",
+      app_role: PARTNER_SIGNUP_ROLE,
+      invited_by_agent_code: inviteCode,
+      invited_by_user_id: inviter.id,
+    },
+    app_metadata: {
+      signup_channel: "partner_invite",
+      app_role: PARTNER_SIGNUP_ROLE,
+    },
   });
 
   if (authError || !newAuthUser?.user) {
@@ -96,14 +120,46 @@ export async function partnerSignupAction(
 
   const newUserId = newAuthUser.user.id;
 
-  const { error: insertError } = await adminClient.from("users").insert({
+  const userRow = buildPartnerSignupUserRow({
     id: newUserId,
     name,
-    role: SIGNUP_FIXED_ROLE,
-    agent_id: agentId,
-    parent_agent_id: inviter.id,
-    is_active: true,
+    agentId,
+    inviterUserId: inviter.id,
+    inviteAgentCode: inviteCode,
   });
+
+  const insertCandidates: Record<string, unknown>[] = [
+    userRow,
+    {
+      id: userRow.id,
+      name: userRow.name,
+      role: PARTNER_SIGNUP_ROLE,
+      agent_id: userRow.agent_id,
+      parent_agent_id: userRow.parent_agent_id,
+      is_active: true,
+    },
+  ];
+
+  let insertError: { message: string } | null = null;
+
+  for (const payload of insertCandidates) {
+    if ((payload.role as string) !== PARTNER_SIGNUP_ROLE) {
+      return { success: false, error: "가입 권한 설정 오류가 발생했습니다." };
+    }
+
+    const { error } = await adminClient.from("users").insert(payload);
+    if (!error) {
+      insertError = null;
+      break;
+    }
+    insertError = error;
+
+    const msg = error.message ?? "";
+    if (/invited_by|column.*does not exist/i.test(msg)) {
+      continue;
+    }
+    break;
+  }
 
   if (insertError) {
     await adminClient.auth.admin.deleteUser(newUserId);

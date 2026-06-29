@@ -6,11 +6,15 @@ import { UserPlus, Sparkles } from "lucide-react";
 import ParoLogo, { PARO_GREETING } from "@/components/ParoLogo";
 import { toast } from "sonner";
 import { partnerSignupAction, type PartnerSignupResult } from "./actions";
+import { resolvePartnerInviteCode } from "@/lib/partner-signup";
 
 export default function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const inviteCode = searchParams.get("invite")?.trim() ?? "";
+  const inviteCode = resolvePartnerInviteCode(
+    searchParams.get("invite"),
+    searchParams.get("ref"),
+  );
 
   const [state, formAction, pending] = useActionState<PartnerSignupResult | null, FormData>(
     partnerSignupAction,
@@ -39,7 +43,7 @@ export default function SignupForm() {
     <div className="w-full max-w-md">
       <div className="flex flex-col items-center mb-8">
         <div className="bg-transparent shrink-0 mb-4">
-          <ParoLogo size={80} priority className="w-16 h-16 sm:w-20 sm:h-20 bg-transparent" />
+          <ParoLogo variant="dashboard" size={80} />
         </div>
         <h1 className="text-2xl font-bold text-foreground text-center leading-snug">
           파로스 노무법인 VIP 제휴 파트너 회원가입
@@ -62,6 +66,7 @@ export default function SignupForm() {
 
       <form action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name="invite" value={inviteCode} />
+        <input type="hidden" name="ref" value={inviteCode} />
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="name" className="text-sm font-medium">

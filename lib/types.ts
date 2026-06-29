@@ -26,6 +26,8 @@ export interface AppUser {
   phone: string | null;
   is_active: boolean;
   parent_agent_id: string | null; // 하위영업자 전용: 총판영업자 id
+  invited_by_user_id?: string | null;
+  invited_by_agent_code?: string | null;
   created_at: string;
   updated_at: string;
 }
