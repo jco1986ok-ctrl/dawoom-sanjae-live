@@ -1,38 +1,32 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Check, Eye, FileText, Loader2, Plus, X } from "lucide-react";
+import { Eye, FileText, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
   calculateCollectionProgress,
   DOC_CATEGORY_LABELS,
   DOC_CATEGORY_ORDER,
-  isSlotCollected,
-  slotsForDocCategory,
-  type DocSlotDefinition,
+  type DocCategory,
 } from "@/lib/document-collection-catalog";
+import {
+  formatFileSize,
+  getCategoryFileItems,
+  type CategoryFileItem,
+} from "@/lib/document-category-files";
 import type { DiseaseCategory } from "@/lib/disease-category";
 import type { LeadDocsStatus } from "@/lib/lead-docs-status";
-import {
-  buildDocPreviewUrl,
-  getDocFileList,
-  type LeadDocKey,
-  type LeadDocFilesMap,
-} from "@/lib/lead-doc-files";
-import {
-  buildOtherDocPreviewUrl,
-  getOtherDocsForSlot,
-  type OtherDocEntry,
-} from "@/lib/lead-other-docs";
+import type { LeadDocKey, LeadDocFilesMap } from "@/lib/lead-doc-files";
+import type { OtherDocEntry } from "@/lib/lead-other-docs";
 import {
   deleteLeadDocumentFile,
   deleteOtherDocumentFile,
-  uploadLeadDocumentsDirect,
-  uploadOtherDocsDirect,
-  uploadSlottedDocsDirect,
+  uploadCategoryDocsDirect,
 } from "@/lib/client-doc-upload";
-import { OtherDocsBadges } from "./OtherDocsBadges";
 import { cn } from "@/lib/utils";
+
+const UPLOAD_ACCEPT =
+  ".pdf,.jpg,.jpeg,.png,.hwp,.hwpx,.doc,.docx,application/pdf,image/jpeg,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 interface Props {
   leadId: string;
@@ -53,417 +47,366 @@ interface Props {
   onOtherDocsUpdated: (otherDocs: OtherDocEntry[]) => void;
 }
 
-type SlotFileItem = {
+type UploadQueueItem = {
   id: string;
   fileName: string;
-  storagePath: string;
-  previewUrl: string;
-  kind: "standard" | "other";
-  docKey?: LeadDocKey;
-  fileIndex?: number;
+  percent: number;
+  status: "uploading" | "done" | "error";
 };
 
-function UploadLoadingOverlay({ visible }: { visible: boolean }) {
-  if (!visible) return null;
+function UploadProgressBar({ percent }: { percent: number }) {
   return (
-    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-xl bg-white/85 backdrop-blur-[2px]">
-      <Loader2 className="w-8 h-8 animate-spin text-[#3182f6]" />
-      <p className="text-sm font-semibold text-slate-700">파일을 안전하게 업로드 중입니다...</p>
+    <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+      <div
+        className="h-full rounded-full bg-gradient-to-r from-[#3182f6] to-[#60a5fa] transition-[width] duration-300 ease-out"
+        style={{ width: `${percent}%` }}
+      />
     </div>
   );
 }
 
-function SlotFileBadge({
+function CategoryFileRow({
   file,
   disabled,
   onDelete,
 }: {
-  file: SlotFileItem;
+  file: CategoryFileItem;
   disabled: boolean;
   onDelete: () => void;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 max-w-full rounded-md border border-emerald-200 bg-white px-2 py-1 text-[11px] text-slate-700">
+    <li className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
       <button
         type="button"
         onClick={() => window.open(file.previewUrl, "_blank")}
-        className="inline-flex items-center gap-1 min-w-0 hover:text-[#3182f6]"
+        className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-[#3182f6]"
         title="미리보기/다운로드"
       >
-        <FileText className="w-3 h-3 shrink-0 text-emerald-600" />
-        <span className="truncate max-w-[140px]">📄{file.fileName}</span>
+        <FileText className="h-4 w-4 shrink-0 text-emerald-600" />
+        <span className="truncate text-sm font-medium text-slate-800">{file.fileName}</span>
       </button>
+      <span className="shrink-0 text-xs tabular-nums text-slate-500">
+        {formatFileSize(file.fileSize)}
+      </span>
       <button
         type="button"
         disabled={disabled}
         onClick={onDelete}
-        className="shrink-0 rounded p-0.5 text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-40"
+        className="shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
         title="삭제"
         aria-label={`${file.fileName} 삭제`}
       >
-        <X className="w-3 h-3" />
+        <Trash2 className="h-4 w-4" />
       </button>
-    </div>
-  );
-}
-
-function DocSlotRow({
-  leadId,
-  slot,
-  collected,
-  docFiles,
-  otherDocs,
-  disabled,
-  onDocsUpdated,
-  onOtherDocsUpdated,
-  onUploadStart,
-  onUploadEnd,
-}: {
-  leadId: string;
-  slot: DocSlotDefinition;
-  collected: boolean;
-  docFiles: LeadDocFilesMap;
-  otherDocs: OtherDocEntry[];
-  disabled: boolean;
-  onDocsUpdated: Props["onDocsUpdated"];
-  onOtherDocsUpdated: Props["onOtherDocsUpdated"];
-  onUploadStart: () => void;
-  onUploadEnd: () => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const inputId = `slot-upload-${leadId}-${slot.id}`;
-
-  const standardFiles = slot.leadDocKey ? getDocFileList(docFiles, slot.leadDocKey) : [];
-  const slottedOthers = getOtherDocsForSlot(otherDocs, slot.id);
-
-  const fileItems: SlotFileItem[] = [
-    ...standardFiles.map((meta, fileIndex) => ({
-      id: meta.storagePath,
-      fileName: meta.fileName,
-      storagePath: meta.storagePath,
-      previewUrl: buildDocPreviewUrl(leadId, slot.leadDocKey!, fileIndex),
-      kind: "standard" as const,
-      docKey: slot.leadDocKey,
-      fileIndex,
-    })),
-    ...slottedOthers.map((entry) => {
-      const otherIndex = otherDocs.findIndex((doc) => doc.storagePath === entry.storagePath);
-      return {
-        id: entry.storagePath,
-        fileName: entry.fileName,
-        storagePath: entry.storagePath,
-        previewUrl: buildOtherDocPreviewUrl(leadId, otherIndex),
-        kind: "other" as const,
-      };
-    }),
-  ];
-
-  const uploadFiles = async (files: File[]) => {
-    if (files.length === 0) return;
-    onUploadStart();
-    try {
-      if (slot.leadDocKey) {
-        const result = await uploadLeadDocumentsDirect(leadId, slot.leadDocKey, files);
-        onDocsUpdated(slot.leadDocKey, {
-          docsStatus: result.docsStatus,
-          docFiles: result.docFiles ?? {},
-          docs_status: result.docs_status,
-        });
-      } else {
-        const result = await uploadSlottedDocsDirect(leadId, files, slot.id, slot.category);
-        onOtherDocsUpdated(result.otherDocs);
-      }
-      toast.success(
-        files.length > 1
-          ? `${slot.label} ${files.length}건 업로드 완료`
-          : `${slot.label} 업로드 완료`,
-      );
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "업로드 중 오류가 발생했습니다.");
-    } finally {
-      onUploadEnd();
-    }
-  };
-
-  const handleDelete = async (file: SlotFileItem) => {
-    if (!window.confirm(`"${file.fileName}" 파일을 삭제할까요?`)) return;
-    onUploadStart();
-    try {
-      if (file.kind === "standard" && file.docKey) {
-        const result = await deleteLeadDocumentFile(leadId, file.docKey, file.storagePath);
-        onDocsUpdated(file.docKey, {
-          docsStatus: result.docsStatus,
-          docFiles: result.docFiles ?? {},
-          docs_status: result.docs_status,
-        });
-      } else {
-        const result = await deleteOtherDocumentFile(leadId, file.storagePath);
-        onOtherDocsUpdated(result.otherDocs);
-      }
-      toast.success("파일이 삭제되었습니다.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "삭제 중 오류가 발생했습니다.");
-    } finally {
-      onUploadEnd();
-    }
-  };
-
-  return (
-    <li
-      className={cn(
-        "rounded-lg border px-3 py-2.5",
-        collected
-          ? "bg-emerald-50 border-emerald-200"
-          : "bg-white border-dashed border-gray-300",
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-800">{slot.label}</p>
-          {!collected && (
-            <p className="text-[10px] text-red-500/90 mt-0.5 flex items-center gap-1">
-              <X className="w-3 h-3" /> ❌ 미제출
-            </p>
-          )}
-          {collected && (
-            <p className="text-[10px] text-emerald-700 mt-0.5 flex items-center gap-1">
-              <Check className="w-3 h-3" /> {fileItems.length}건 첨부됨
-            </p>
-          )}
-        </div>
-
-        <input
-          id={inputId}
-          ref={inputRef}
-          type="file"
-          multiple
-          accept="image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.webp"
-          className="sr-only"
-          disabled={disabled}
-          onChange={(e) => {
-            const selected = Array.from(e.target.files ?? []);
-            e.target.value = "";
-            if (selected.length > 0) void uploadFiles(selected);
-          }}
-        />
-
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => inputRef.current?.click()}
-          className={cn(
-            "inline-flex items-center gap-1 shrink-0 text-xs font-bold px-3 py-2 rounded-lg disabled:opacity-50",
-            collected
-              ? "border border-[#3182f6] text-[#3182f6] bg-white hover:bg-[#E8F3FF]"
-              : "bg-[#3182f6] text-white hover:bg-[#2563eb]",
-          )}
-        >
-          <Plus className="w-3.5 h-3.5" />
-          {collected ? "추가 첨부" : "직접 파일 첨부"}
-        </button>
-      </div>
-
-      {fileItems.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {fileItems.map((file) => (
-            <SlotFileBadge
-              key={file.id}
-              file={file}
-              disabled={disabled}
-              onDelete={() => void handleDelete(file)}
-            />
-          ))}
-        </div>
-      )}
     </li>
   );
 }
 
-function getUngroupedOtherDocs(otherDocs: OtherDocEntry[]): OtherDocEntry[] {
-  return otherDocs.filter((doc) => !doc.slotId);
-}
-
-function OtherDocsBulkSection({
+function CategoryUploadSection({
   leadId,
-  otherDocs,
+  category,
+  files,
+  uploadQueue,
   disabled,
-  onOtherDocsUpdated,
-  onUploadStart,
-  onUploadEnd,
+  onUpload,
+  onDelete,
 }: {
   leadId: string;
-  otherDocs: OtherDocEntry[];
+  category: DocCategory;
+  files: CategoryFileItem[];
+  uploadQueue: UploadQueueItem[];
   disabled: boolean;
-  onOtherDocsUpdated: Props["onOtherDocsUpdated"];
-  onUploadStart: () => void;
-  onUploadEnd: () => void;
+  onUpload: (files: File[]) => void;
+  onDelete: (file: CategoryFileItem) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const inputId = `other-docs-upload-${leadId}`;
-  const ungrouped = getUngroupedOtherDocs(otherDocs);
+  const inputId = `category-upload-${leadId}-${category}`;
+  const [dragOver, setDragOver] = useState(false);
 
-  const uploadFiles = async (files: File[]) => {
-    if (files.length === 0) return;
-    onUploadStart();
-    try {
-      const result = await uploadOtherDocsDirect(leadId, files);
-      onOtherDocsUpdated(result.otherDocs);
-      toast.success(
-        files.length > 1 ? `기타 서류 ${files.length}건 업로드 완료` : "기타 서류 업로드 완료",
-      );
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "업로드 중 오류가 발생했습니다.");
-    } finally {
-      onUploadEnd();
-    }
+  const handleFiles = (selected: File[]) => {
+    if (selected.length === 0) return;
+    onUpload(selected);
   };
 
   return (
-    <section className="mt-5 pt-5 border-t border-slate-200">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <h4 className="text-[13px] font-black text-[#0f2d5e]">기타 서류</h4>
-          <p className="text-[10px] text-slate-500 mt-0.5">
-            항목 분류 없이 추가 서류 — 여러 파일을 한 번에 선택해 업로드할 수 있습니다.
-          </p>
-        </div>
+    <section className="mb-6 last:mb-0">
+      <div className="mb-3 flex items-center justify-between border-b border-slate-200 pb-2">
+        <h4 className="text-[13px] font-black text-[#0f2d5e]">{DOC_CATEGORY_LABELS[category]}</h4>
+        <span className="text-[11px] font-semibold text-slate-500">{files.length}건</span>
+      </div>
+
+      {category === "institution" && (
+        <p className="mb-2 flex items-center gap-1 text-[10px] text-slate-400">
+          <Eye className="h-3 w-3" />
+          공단·기관 발급 서류 업로드 영역입니다.
+        </p>
+      )}
+
+      <div
+        role="button"
+        tabIndex={0}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!disabled) setDragOver(true);
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (disabled) return;
+          handleFiles(Array.from(e.dataTransfer.files ?? []));
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (!disabled) inputRef.current?.click();
+          }
+        }}
+        onClick={() => {
+          if (!disabled) inputRef.current?.click();
+        }}
+        className={cn(
+          "mb-3 flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition",
+          dragOver
+            ? "border-[#3182f6] bg-[#E8F3FF]"
+            : "border-slate-300 bg-white hover:border-[#3182f6]/60 hover:bg-slate-50",
+          disabled && "pointer-events-none opacity-50",
+        )}
+      >
+        <Upload className="h-8 w-8 text-[#3182f6]/70" />
+        <p className="text-sm font-semibold text-slate-700">
+          파일을 여기에 끌어다 놓거나 클릭하여 선택
+        </p>
+        <p className="text-[11px] text-slate-500">
+          PDF · JPG · PNG · HWP · DOC · DOCX · 여러 파일 동시 선택 가능 (최대 1GB/건)
+        </p>
         <input
           id={inputId}
           ref={inputRef}
           type="file"
           multiple
-          accept="image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.webp"
+          accept={UPLOAD_ACCEPT}
           className="sr-only"
           disabled={disabled}
           onChange={(e) => {
             const selected = Array.from(e.target.files ?? []);
             e.target.value = "";
-            if (selected.length > 0) void uploadFiles(selected);
+            handleFiles(selected);
           }}
         />
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => inputRef.current?.click()}
-          className="inline-flex items-center gap-1 shrink-0 text-xs font-bold px-3 py-2 rounded-lg
-            bg-[#3182f6] text-white hover:bg-[#2563eb] disabled:opacity-50"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          기타 서류 첨부
-        </button>
       </div>
 
-      {ungrouped.length > 0 ? (
-        <OtherDocsBadges leadId={leadId} otherDocs={ungrouped} interactive />
-      ) : (
-        <p className="text-[11px] text-slate-400">등록된 기타 서류가 없습니다.</p>
+      {uploadQueue.length > 0 && (
+        <ul className="mb-3 flex flex-col gap-2">
+          {uploadQueue.map((item) => (
+            <li
+              key={item.id}
+              className="rounded-lg border border-blue-100 bg-blue-50/50 px-3 py-2.5"
+            >
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <span className="truncate text-xs font-medium text-slate-700">{item.fileName}</span>
+                <span className="shrink-0 text-xs font-bold tabular-nums text-[#3182f6]">
+                  {item.status === "done" ? "완료" : `${item.percent}%`}
+                </span>
+              </div>
+              <UploadProgressBar percent={item.status === "done" ? 100 : item.percent} />
+            </li>
+          ))}
+        </ul>
       )}
+
+      {files.length > 0 ? (
+        <ul className="flex flex-col gap-2">
+          {files.map((file) => (
+            <CategoryFileRow
+              key={file.id}
+              file={file}
+              disabled={disabled}
+              onDelete={() => onDelete(file)}
+            />
+          ))}
+        </ul>
+      ) : uploadQueue.length === 0 ? (
+        <p className="text-[11px] text-slate-400">등록된 서류가 없습니다.</p>
+      ) : null}
     </section>
   );
 }
 
-/** 관리자/파트너 — 3단계 카테고리 서류 수집 패널 */
+/** 관리자/파트너 — 4대 카테고리 서류 취합 패널 */
 export function AdminDocumentCollectionPanel({
   leadId,
   customerName: _customerName,
   docsStatus,
   docFiles,
   otherDocs,
-  diseaseCategory = null,
+  diseaseCategory: _diseaseCategory = null,
   className,
   onDocsUpdated,
   onOtherDocsUpdated,
 }: Props) {
-  const [uploadingCount, setUploadingCount] = useState(0);
-  const isUploading = uploadingCount > 0;
+  const [uploadQueues, setUploadQueues] = useState<Record<DocCategory, UploadQueueItem[]>>({
+    medical: [],
+    personal: [],
+    institution: [],
+    other: [],
+  });
+  const [busyCategories, setBusyCategories] = useState<Set<DocCategory>>(new Set());
 
-  const progress = calculateCollectionProgress(docsStatus, docFiles, otherDocs, diseaseCategory);
+  const progress = calculateCollectionProgress(docsStatus, docFiles, otherDocs);
 
-  const beginUpload = useCallback(() => setUploadingCount((c) => c + 1), []);
-  const endUpload = useCallback(() => setUploadingCount((c) => Math.max(0, c - 1)), []);
+  const setCategoryBusy = useCallback((category: DocCategory, busy: boolean) => {
+    setBusyCategories((prev) => {
+      const next = new Set(prev);
+      if (busy) next.add(category);
+      else next.delete(category);
+      return next;
+    });
+  }, []);
+
+  const updateQueueItem = useCallback(
+    (category: DocCategory, id: string, patch: Partial<UploadQueueItem>) => {
+      setUploadQueues((prev) => ({
+        ...prev,
+        [category]: prev[category].map((item) =>
+          item.id === id ? { ...item, ...patch } : item,
+        ),
+      }));
+    },
+    [],
+  );
+
+  const clearQueueAfterDelay = useCallback((category: DocCategory, delayMs = 1500) => {
+    window.setTimeout(() => {
+      setUploadQueues((prev) => ({ ...prev, [category]: [] }));
+    }, delayMs);
+  }, []);
+
+  const handleCategoryUpload = useCallback(
+    async (category: DocCategory, files: File[]) => {
+      const queueItems: UploadQueueItem[] = files.map((file, index) => ({
+        id: `${category}-${Date.now()}-${index}`,
+        fileName: file.name,
+        percent: 0,
+        status: "uploading" as const,
+      }));
+
+      setUploadQueues((prev) => ({ ...prev, [category]: queueItems }));
+      setCategoryBusy(category, true);
+
+      try {
+        const result = await uploadCategoryDocsDirect(
+          leadId,
+          files,
+          category,
+          (fileIndex, _fileName, percent) => {
+            const item = queueItems[fileIndex];
+            if (item) {
+              updateQueueItem(category, item.id, { percent, status: "uploading" });
+            }
+          },
+        );
+
+        queueItems.forEach((item) => {
+          updateQueueItem(category, item.id, { percent: 100, status: "done" });
+        });
+
+        onOtherDocsUpdated(result.otherDocs);
+        toast.success(
+          files.length > 1
+            ? `${DOC_CATEGORY_LABELS[category]} ${files.length}건 업로드 완료`
+            : `${DOC_CATEGORY_LABELS[category]} 업로드 완료`,
+        );
+        clearQueueAfterDelay(category);
+      } catch (err) {
+        queueItems.forEach((item) => {
+          updateQueueItem(category, item.id, { status: "error" });
+        });
+        toast.error(err instanceof Error ? err.message : "업로드 중 오류가 발생했습니다.");
+        clearQueueAfterDelay(category, 3000);
+      } finally {
+        setCategoryBusy(category, false);
+      }
+    },
+    [leadId, onOtherDocsUpdated, updateQueueItem, clearQueueAfterDelay, setCategoryBusy],
+  );
+
+  const handleDelete = useCallback(
+    async (category: DocCategory, file: CategoryFileItem) => {
+      if (!window.confirm(`"${file.fileName}" 파일을 삭제할까요?`)) return;
+      setCategoryBusy(category, true);
+      try {
+        if (file.kind === "standard" && file.docKey) {
+          const result = await deleteLeadDocumentFile(leadId, file.docKey, file.storagePath);
+          onDocsUpdated(file.docKey, {
+            docsStatus: result.docsStatus,
+            docFiles: result.docFiles ?? {},
+            docs_status: result.docs_status,
+          });
+        } else {
+          const result = await deleteOtherDocumentFile(leadId, file.storagePath);
+          onOtherDocsUpdated(result.otherDocs);
+        }
+        toast.success("파일이 삭제되었습니다.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "삭제 중 오류가 발생했습니다.");
+      } finally {
+        setCategoryBusy(category, false);
+      }
+    },
+    [leadId, onDocsUpdated, onOtherDocsUpdated, setCategoryBusy],
+  );
+
+  const isAnyBusy = busyCategories.size > 0;
 
   return (
-    <div className={cn("relative bg-gray-50 border border-gray-200 rounded-xl p-5", className)}>
-      <UploadLoadingOverlay visible={isUploading} />
-
+    <div className={cn("relative rounded-xl border border-gray-200 bg-gray-50 p-5", className)}>
       <div className="mb-5">
-        <div className="flex items-end justify-between gap-3 mb-2">
+        <div className="mb-2 flex items-end justify-between gap-3">
           <div>
             <h3 className="text-sm font-bold text-slate-900">서류 취합 현황</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              {progress.collected} / {progress.total}건 수집 · 카톡·현장 수령 서류 직접 첨부
+            <p className="mt-0.5 text-[11px] text-slate-500">
+              {progress.collected}건 수집 · 카톡·현장 수령 서류 직접 첨부
             </p>
           </div>
-          <span className="text-2xl font-black text-[#3182f6] tabular-nums">{progress.percent}%</span>
+          <span className="text-2xl font-black tabular-nums text-[#3182f6]">{progress.percent}%</span>
         </div>
-        <div className="h-3 rounded-full bg-slate-200 overflow-hidden">
+        <div className="h-3 overflow-hidden rounded-full bg-slate-200">
           <div
             className="h-full bg-gradient-to-r from-[#3182f6] to-[#60a5fa] transition-all duration-500"
             style={{ width: `${progress.percent}%` }}
           />
         </div>
-        <p className="text-[11px] text-slate-500 mt-1.5">
-          현재 서류 취합률 {progress.percent}%
-        </p>
       </div>
 
       {DOC_CATEGORY_ORDER.map((category) => {
-        const slots = slotsForDocCategory(category, diseaseCategory);
-        const catProgress = progress.byCategory[category];
+        const files = getCategoryFileItems(
+          category,
+          leadId,
+          docsStatus,
+          docFiles,
+          otherDocs,
+        );
         return (
-          <section key={category} className="mb-5 last:mb-0">
-            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-200">
-              <h4 className="text-[13px] font-black text-[#0f2d5e]">
-                {DOC_CATEGORY_LABELS[category]}
-              </h4>
-              <span className="text-[11px] font-semibold text-slate-500">
-                {catProgress.collected}/{catProgress.total} ({catProgress.percent}%)
-              </span>
-            </div>
-            {category === "medical" && diseaseCategory && (
-              <p className="text-[10px] text-slate-500 mb-2">
-                {diseaseCategory} 카테고리에 필요한 서류만 표시됩니다.
-              </p>
-            )}
-            {category === "institution" && (
-              <p className="text-[10px] text-slate-400 mb-2 flex items-center gap-1">
-                <Eye className="w-3 h-3" />
-                파로스 노무사가 공단·기관 발급 서류를 직접 업로드하는 영역입니다.
-              </p>
-            )}
-            <ul className="flex flex-col gap-2">
-              {slots.map((slot) => (
-                <DocSlotRow
-                  key={slot.id}
-                  leadId={leadId}
-                  slot={slot}
-                  collected={isSlotCollected(slot, docsStatus, docFiles, otherDocs)}
-                  docFiles={docFiles}
-                  otherDocs={otherDocs}
-                  disabled={isUploading}
-                  onDocsUpdated={onDocsUpdated}
-                  onOtherDocsUpdated={onOtherDocsUpdated}
-                  onUploadStart={beginUpload}
-                  onUploadEnd={endUpload}
-                />
-              ))}
-            </ul>
-          </section>
+          <CategoryUploadSection
+            key={category}
+            leadId={leadId}
+            category={category}
+            files={files}
+            uploadQueue={uploadQueues[category]}
+            disabled={isAnyBusy}
+            onUpload={(selected) => void handleCategoryUpload(category, selected)}
+            onDelete={(file) => void handleDelete(category, file)}
+          />
         );
       })}
 
-      <OtherDocsBulkSection
-        leadId={leadId}
-        otherDocs={otherDocs}
-        disabled={isUploading}
-        onOtherDocsUpdated={onOtherDocsUpdated}
-        onUploadStart={beginUpload}
-        onUploadEnd={endUpload}
-      />
-
-      <p className="text-[10px] text-slate-400 mt-4 flex items-center gap-1">
-        <Eye className="w-3 h-3" />
-        위임장/약정서는 전자서명 PDF로 별도 관리됩니다. 항목당 여러 파일을 한 번에 선택해 업로드할 수 있습니다.
+      <p className="mt-2 flex items-center gap-1 text-[10px] text-slate-400">
+        <Eye className="h-3 w-3" />
+        위임장/약정서는 전자서명 PDF로 별도 관리됩니다. zip·exe·동영상 파일은 업로드할 수 없습니다.
       </p>
     </div>
   );

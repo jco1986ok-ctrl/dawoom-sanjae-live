@@ -5,6 +5,7 @@ export interface OtherDocEntry {
   storagePath: string;
   fileName: string;
   mimeType: string;
+  fileSize?: number;
   uploadedAt?: string;
   slotId?: DocSlotId;
   category?: DocCategory;
@@ -51,10 +52,14 @@ function parseOtherDocEntry(item: unknown): OtherDocEntry | null {
   const slotId =
     typeof o.slotId === "string" ? (o.slotId as DocSlotId) : undefined;
   const category =
-    o.category === "medical" || o.category === "personal" || o.category === "institution"
+    o.category === "medical" ||
+    o.category === "personal" ||
+    o.category === "institution" ||
+    o.category === "other"
       ? o.category
       : undefined;
-  return { storagePath, fileName, mimeType, uploadedAt, slotId, category };
+  const fileSize = typeof o.fileSize === "number" && o.fileSize > 0 ? o.fileSize : undefined;
+  return { storagePath, fileName, mimeType, uploadedAt, slotId, category, fileSize };
 }
 
 function guessMimeFromName(name: string): string {
@@ -64,6 +69,15 @@ function guessMimeFromName(name: string): string {
 export function buildOtherDocStoragePath(leadId: string, originalFileName: string): string {
   const safeName = sanitizeStorageObjectKey(originalFileName);
   return `${leadId}/other_${safeName}`;
+}
+
+export function buildCategoryDocStoragePath(
+  leadId: string,
+  category: DocCategory,
+  originalFileName: string,
+): string {
+  const safeName = sanitizeStorageObjectKey(originalFileName);
+  return `${leadId}/cat_${category}_${safeName}`;
 }
 
 export function buildOtherDocPreviewUrl(leadId: string, index: number): string {

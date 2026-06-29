@@ -5,8 +5,9 @@ import type { LeadDocsStatus } from "@/lib/lead-docs-status";
 import type { OtherDocEntry } from "@/lib/lead-other-docs";
 import type { DiseaseCategory } from "@/lib/disease-category";
 import { getMedicalSlotIdsForDisease } from "@/lib/disease-category";
+import { getDocFileList } from "@/lib/lead-doc-files";
 
-export type DocCategory = "medical" | "personal" | "institution";
+export type DocCategory = "medical" | "personal" | "institution" | "other";
 
 export type DocSlotId =
   | "diagnosisReport"
@@ -127,15 +128,17 @@ export const DOC_COLLECTION_SLOTS: DocSlotDefinition[] = [
 ];
 
 export const DOC_CATEGORY_LABELS: Record<DocCategory, string> = {
-  medical: "의료기관 서류",
-  personal: "개인/현장 증빙 서류",
-  institution: "기관 발급 서류",
+  medical: "1. 의료기관 서류",
+  personal: "2. 개인/현장 증빙 서류",
+  institution: "3. 기관 발급 서류",
+  other: "4. 기타 서류",
 };
 
 export const DOC_CATEGORY_ORDER: DocCategory[] = [
   "medical",
   "personal",
   "institution",
+  "other",
 ];
 
 /** 고객 접수 후 3단계 위저드 정의 */
@@ -219,11 +222,53 @@ export function isMandateContractCollected(
   return docHasStoredFile("mandateContract", docsStatus, docFiles);
 }
 
+function resolveOtherDocCategory(doc: OtherDocEntry): DocCategory {
+  if (
+    doc.category === "medical" ||
+    doc.category === "personal" ||
+    doc.category === "institution" ||
+    doc.category === "other"
+  ) {
+    return doc.category;
+  }
+  if (doc.slotId) {
+    return getSlotDefinition(doc.slotId)?.category ?? "other";
+  }
+  return "other";
+}
+
+function countCategoryUploadedFiles(
+  category: DocCategory,
+  docFiles: LeadDocFilesMap,
+  otherDocs: OtherDocEntry[],
+): number {
+  const seenPaths = new Set<string>();
+  let count = 0;
+
+  for (const slot of DOC_COLLECTION_SLOTS) {
+    if (slot.category !== category || !slot.leadDocKey) continue;
+    for (const meta of getDocFileList(docFiles, slot.leadDocKey)) {
+      if (seenPaths.has(meta.storagePath)) continue;
+      seenPaths.add(meta.storagePath);
+      count += 1;
+    }
+  }
+
+  for (const doc of otherDocs) {
+    if (resolveOtherDocCategory(doc) !== category) continue;
+    if (seenPaths.has(doc.storagePath)) continue;
+    seenPaths.add(doc.storagePath);
+    count += 1;
+  }
+
+  return count;
+}
+
 export function calculateCollectionProgress(
   docsStatus: LeadDocsStatus,
   docFiles: LeadDocFilesMap,
   otherDocs: OtherDocEntry[],
-  diseaseCategory?: DiseaseCategory | null,
+  _diseaseCategory?: DiseaseCategory | null,
 ): {
   percent: number;
   collected: number;
@@ -236,32 +281,36 @@ export function calculateCollectionProgress(
     { collected: number; total: number; percent: number }
   >;
 
-  let collected = 0;
-  let total = 0;
-
   const mandateCollected = isMandateContractCollected(docsStatus, docFiles);
-  if (mandateCollected) collected += 1;
-  total += 1;
+  let totalFiles = 0;
 
   for (const category of DOC_CATEGORY_ORDER) {
-    const slots = slotsForDocCategory(category, diseaseCategory);
-    const catCollected = slots.filter((slot) =>
-      isSlotCollected(slot, docsStatus, docFiles, otherDocs),
-    ).length;
-    const catTotal = slots.length;
+    const count = countCategoryUploadedFiles(category, docFiles, otherDocs);
     byCategory[category] = {
-      collected: catCollected,
-      total: catTotal,
-      percent: catTotal > 0 ? Math.round((catCollected / catTotal) * 100) : 0,
+      collected: count,
+      total: Math.max(count, 1),
+      percent: count > 0 ? 100 : 0,
     };
-    collected += catCollected;
-    total += catTotal;
+    totalFiles += count;
   }
+
+  const filledCategories = DOC_CATEGORY_ORDER.filter(
+    (category) => byCategory[category].collected > 0,
+  ).length;
+  const categoryPercent = Math.round(
+    (filledCategories / DOC_CATEGORY_ORDER.length) * 100,
+  );
+  const percent = mandateCollected
+    ? Math.min(100, Math.round(categoryPercent * 0.85 + 15))
+    : categoryPercent;
+
+  const collected = totalFiles + (mandateCollected ? 1 : 0);
+  const total = Math.max(collected, DOC_CATEGORY_ORDER.length + (mandateCollected ? 1 : 0));
 
   return {
     collected,
     total,
-    percent: total > 0 ? Math.round((collected / total) * 100) : 0,
+    percent,
     mandateCollected,
     byCategory,
   };

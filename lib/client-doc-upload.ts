@@ -1,10 +1,11 @@
-import { createClient } from "@/lib/supabase/client";
 import type { LeadDocKey, LeadDocFilesMap } from "@/lib/lead-doc-files";
 import type { LeadDocsStatus } from "@/lib/lead-docs-status";
 import type { OtherDocEntry } from "@/lib/lead-other-docs";
-import { buildOtherDocStoragePath } from "@/lib/lead-other-docs";
+import { buildOtherDocStoragePath, buildCategoryDocStoragePath } from "@/lib/lead-other-docs";
+import type { DocCategory } from "@/lib/document-collection-catalog";
 import {
   buildLeadDocStoragePath,
+  formatMaxUploadSizeLabel,
   resolveUploadMimeType,
   sanitizeUploadFileName,
   validateUploadFile,
@@ -41,10 +42,10 @@ function formatUploadError(step: string, detail?: string): string {
     return `${step} 권한 오류 — 다시 로그인 후 시도해 주세요. (${msg})`;
   }
   if (/mime|content type|invalid file type/i.test(msg)) {
-    return `${step} — PDF 또는 JPG/PNG 이미지만 업로드할 수 있습니다. (${msg})`;
+    return `${step} — PDF, JPG, PNG, HWP, DOC, DOCX만 업로드할 수 있습니다. (${msg})`;
   }
   if (/payload too large|413|size/i.test(msg)) {
-    return `${step} — 파일 용량은 50MB 이하여야 합니다. (${msg})`;
+    return `${step} — 파일 용량은 ${formatMaxUploadSizeLabel()} 이하여야 합니다. (${msg})`;
   }
   return `${step}: ${msg}`;
 }
@@ -66,28 +67,43 @@ async function requestSignedUploadUrl(
   return data;
 }
 
-/** Signed URL로 Storage 직접 PUT — RLS·MIME 이슈 우회 */
+/** Signed URL로 Storage 직접 PUT — 업로드 진행률 콜백 지원 */
 async function uploadFileViaSignedUrl(
   leadId: string,
   storagePath: string,
   file: File,
   upsert: boolean,
+  onProgress?: (percent: number) => void,
 ): Promise<void> {
   const mimeType = resolveUploadMimeType(file);
   const signed = await requestSignedUploadUrl(leadId, storagePath, upsert);
 
-  const supabase = createClient();
-  const { error: uploadError } = await supabase.storage
-    .from("documents")
-    .uploadToSignedUrl(signed.path, signed.token, file, {
-      contentType: mimeType,
-      upsert,
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable && onProgress) {
+        const percent = Math.min(100, Math.round((event.loaded / event.total) * 100));
+        onProgress(percent);
+      }
     });
-
-  if (uploadError) {
-    console.error("[client-doc-upload signed]", uploadError);
-    throw new Error(formatUploadError("파일 업로드", uploadError.message));
-  }
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(100);
+        resolve();
+        return;
+      }
+      reject(new Error(formatUploadError("파일 업로드", `HTTP ${xhr.status}`)));
+    });
+    xhr.addEventListener("error", () => {
+      reject(new Error(formatUploadError("파일 업로드", "네트워크 오류")));
+    });
+    xhr.addEventListener("abort", () => {
+      reject(new Error(formatUploadError("파일 업로드", "업로드가 취소되었습니다.")));
+    });
+    xhr.open("PUT", signed.signedUrl);
+    xhr.setRequestHeader("Content-Type", mimeType);
+    xhr.send(file);
+  });
 }
 
 async function syncDocumentMetadata(
@@ -112,13 +128,15 @@ async function uploadFilesToStorage(
   leadId: string,
   files: File[],
   resolvePath: (file: File) => string,
+  onFileProgress?: (fileIndex: number, fileName: string, percent: number) => void,
 ): Promise<void> {
-  await Promise.all(
-    files.map(async (file) => {
-      const storagePath = resolvePath(file);
-      await uploadFileViaSignedUrl(leadId, storagePath, file, false);
-    }),
-  );
+  for (let i = 0; i < files.length; i += 1) {
+    const file = files[i];
+    const storagePath = resolvePath(file);
+    await uploadFileViaSignedUrl(leadId, storagePath, file, false, (percent) => {
+      onFileProgress?.(i, file.name, percent);
+    });
+  }
 }
 
 /** 클라이언트 → Supabase Storage 직접 업로드 (단일 파일) */
@@ -303,6 +321,65 @@ export async function uploadSlottedDocsDirect(
       } satisfies OtherDocEntry;
     }),
   );
+
+  const res = await syncDocumentMetadata(leadId, {
+    type: "other",
+    append,
+  });
+
+  const data = (await res.json().catch(() => ({}))) as OtherDocsUploadResult & {
+    error?: string;
+  };
+
+  if (!res.ok || !Array.isArray(data.otherDocs)) {
+    throw new Error(formatUploadError("서류 정보 저장", data.error));
+  }
+
+  return { otherDocs: data.otherDocs };
+}
+
+export type CategoryUploadProgressCallback = (
+  fileIndex: number,
+  fileName: string,
+  percent: number,
+) => void;
+
+/** 카테고리별 다중 서류 직접 업로드 (서류 취합 단순화 UI) */
+export async function uploadCategoryDocsDirect(
+  leadId: string,
+  files: File[],
+  category: DocCategory,
+  onFileProgress?: CategoryUploadProgressCallback,
+): Promise<OtherDocsUploadResult> {
+  if (files.length === 0) {
+    throw new Error("업로드할 파일을 선택해 주세요.");
+  }
+
+  const append: OtherDocEntry[] = [];
+  for (let i = 0; i < files.length; i += 1) {
+    const file = files[i];
+    const validationError = validateUploadFile(file);
+    if (validationError) {
+      throw new Error(`${file.name}: ${validationError}`);
+    }
+
+    const mimeType = resolveUploadMimeType(file);
+    const displayName = sanitizeUploadFileName(file.name);
+    const storagePath = buildCategoryDocStoragePath(leadId, category, file.name);
+
+    await uploadFileViaSignedUrl(leadId, storagePath, file, false, (percent) => {
+      onFileProgress?.(i, file.name, percent);
+    });
+
+    append.push({
+      storagePath,
+      fileName: displayName,
+      mimeType,
+      category,
+      fileSize: file.size,
+      uploadedAt: new Date().toISOString(),
+    });
+  }
 
   const res = await syncDocumentMetadata(leadId, {
     type: "other",

@@ -1,18 +1,61 @@
 import type { LeadDocKey } from "@/lib/lead-doc-files";
 import type { DocFileMeta } from "@/lib/lead-doc-files";
 
-export const MAX_DOC_UPLOAD_BYTES = 50 * 1024 * 1024;
+/** 산재 실무 — 의무기록사본 등 대용량 PDF 허용 (최대 1GB) */
+export const MAX_DOC_UPLOAD_BYTES = 1024 * 1024 * 1024;
+
+export const BLOCKED_UPLOAD_EXTENSIONS = new Set([
+  "zip",
+  "rar",
+  "7z",
+  "tar",
+  "gz",
+  "exe",
+  "bat",
+  "cmd",
+  "msi",
+  "dll",
+  "scr",
+  "mp4",
+  "mov",
+  "avi",
+  "mkv",
+  "webm",
+  "wmv",
+  "m4v",
+  "flv",
+  "mpeg",
+  "mpg",
+  "js",
+  "html",
+  "htm",
+  "php",
+  "sh",
+  "ps1",
+  "vbs",
+]);
+
+export const ALLOWED_UPLOAD_EXTENSIONS = new Set([
+  "pdf",
+  "jpg",
+  "jpeg",
+  "png",
+  "hwp",
+  "hwpx",
+  "doc",
+  "docx",
+]);
 
 export const ALLOWED_DOC_MIME = new Set([
   "application/pdf",
   "image/jpeg",
   "image/png",
-  "image/webp",
-  "image/gif",
-  "image/heic",
-  "image/heif",
-  "image/bmp",
-  "image/tiff",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/x-hwp",
+  "application/haansofthwp",
+  "application/vnd.hancom.hwp",
+  "application/vnd.hancom.hwpx",
 ]);
 
 /** 파일명 끝 확장자 추출 — 한글·영문 파일명 공통 (예: 건강검진.pdf, report.PDF) */
@@ -34,25 +77,28 @@ export function mimeTypeFromFileName(fileName: string): string | null {
       return "image/jpeg";
     case "png":
       return "image/png";
-    case "webp":
-      return "image/webp";
-    case "gif":
-      return "image/gif";
-    case "heic":
-    case "heif":
-      return "image/heic";
-    case "bmp":
-      return "image/bmp";
-    case "tif":
-    case "tiff":
-      return "image/tiff";
+    case "hwp":
+      return "application/x-hwp";
+    case "hwpx":
+      return "application/vnd.hancom.hwpx";
+    case "doc":
+      return "application/msword";
+    case "docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     default:
       return null;
   }
 }
 
 export function isAllowedUploadFileName(fileName: string): boolean {
-  return mimeTypeFromFileName(fileName) !== null;
+  const ext = extractFileExtension(fileName);
+  if (!ext) return false;
+  if (BLOCKED_UPLOAD_EXTENSIONS.has(ext)) return false;
+  return ALLOWED_UPLOAD_EXTENSIONS.has(ext);
+}
+
+export function formatMaxUploadSizeLabel(): string {
+  return "1GB";
 }
 
 const MANUAL_UPLOAD_KEYS: LeadDocKey[] = [
@@ -226,15 +272,22 @@ export function resolveUploadMimeType(file: File): string {
 }
 
 export function validateUploadFile(file: File): string | null {
+  const ext = extractFileExtension(file.name);
+  if (ext && BLOCKED_UPLOAD_EXTENSIONS.has(ext)) {
+    return "보안상 업로드할 수 없는 파일 형식입니다. (zip, exe, 동영상 등 불가)";
+  }
   if (file.size > MAX_DOC_UPLOAD_BYTES) {
-    return "파일 용량은 50MB 이하여야 합니다.";
+    return `파일 용량은 ${formatMaxUploadSizeLabel()} 이하여야 합니다.`;
+  }
+  if (ext && ALLOWED_UPLOAD_EXTENSIONS.has(ext)) {
+    return null;
   }
   const mime = resolveUploadMimeType(file);
-  if (ALLOWED_DOC_MIME.has(mime) || mime.startsWith("image/")) {
+  if (ALLOWED_DOC_MIME.has(mime)) {
     return null;
   }
   if (isAllowedUploadFileName(file.name)) {
     return null;
   }
-  return "PDF 또는 이미지 파일만 업로드할 수 있습니다. (pdf, jpg, png, webp 등)";
+  return "허용된 형식만 업로드할 수 있습니다. (PDF, JPG, PNG, HWP, DOC, DOCX)";
 }
