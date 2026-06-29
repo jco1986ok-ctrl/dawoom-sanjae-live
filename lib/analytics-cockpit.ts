@@ -177,14 +177,34 @@ export function getLineReferredByIds(
   return new Set([viewerId]);
 }
 
+/** 공식·제휴 파트너 고객 라인 매칭 (RLS 정책과 동일 기준) */
+export function leadBelongsToPartnerLine(
+  lead: LeadDetail,
+  viewerId: string,
+  testRole: DashboardTestRole,
+  users: AdminUserListItem[],
+): boolean {
+  if (testRole === "제휴파트너") {
+    return lead.referred_by_user_id === viewerId;
+  }
+
+  if (testRole === "공식파트너") {
+    if (lead.master_agent_id === viewerId) return true;
+    const lineIds = getLineReferredByIds(viewerId, testRole, users);
+    return !!(lead.referred_by_user_id && lineIds.has(lead.referred_by_user_id));
+  }
+
+  const lineIds = getLineReferredByIds(viewerId, testRole, users);
+  return !!(lead.referred_by_user_id && lineIds.has(lead.referred_by_user_id));
+}
+
 export function filterLeadsByLine(
   leads: LeadDetail[],
   viewerId: string,
   testRole: DashboardTestRole,
   users: AdminUserListItem[],
 ): LeadDetail[] {
-  const lineIds = getLineReferredByIds(viewerId, testRole, users);
-  return leads.filter((l) => l.referred_by_user_id && lineIds.has(l.referred_by_user_id));
+  return leads.filter((l) => leadBelongsToPartnerLine(l, viewerId, testRole, users));
 }
 
 export function computePartnerLineStats(leads: LeadDetail[]): PartnerLineStats {

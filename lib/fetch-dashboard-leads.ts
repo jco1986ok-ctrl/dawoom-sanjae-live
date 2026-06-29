@@ -18,7 +18,7 @@ export type FetchDashboardLeadsOptions = {
 
 /** Supabase/PostgREST 컬럼·스키마 오류 */
 const COLUMN_MISSING =
-  /pdf_url|docs_status|has_weim|other_docs|referrer|assigned_to|disease_category|fee_amount|current_owner_role|assigned_user_id|assignment_memo|is_read|callback_date|last_updated_at|column|does not exist|schema cache|could not find/i;
+  /pdf_url|docs_status|has_weim|other_docs|referrer|assigned_to|disease_category|fee_amount|current_owner_role|assigned_user_id|assignment_memo|is_read|callback_date|last_updated_at|master_agent_id|column|does not exist|schema cache|could not find/i;
 
 function buildSelectVariants(options: FetchDashboardLeadsOptions): string[] {
   const variants: string[] = [];

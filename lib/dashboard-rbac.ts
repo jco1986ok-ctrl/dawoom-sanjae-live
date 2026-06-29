@@ -1,5 +1,10 @@
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import type { UserRole } from "@/lib/types";
+import {
+  formatPartnerRoleTestHint,
+  resolvePartnerRoleTestScenario,
+  type LeadReferralRef,
+} from "@/lib/partner-role-test-scenario";
 
 
 
@@ -127,6 +132,7 @@ export function resolveSimulatedViewerContext(
   loggedInViewerId: string,
   loggedInTestRole: DashboardTestRole,
   users: AdminUserListItem[],
+  leads: LeadReferralRef[] = [],
 ): {
   effectiveViewerId: string;
   effectiveViewerName: string;
@@ -136,6 +142,7 @@ export function resolveSimulatedViewerContext(
 } {
   const fullTreeView = canViewFullReferralTree(testRole);
   const loggedInUser = users.find((u) => u.id === loggedInViewerId);
+  const partnerScenario = resolvePartnerRoleTestScenario(users, leads);
 
   const pickUser = (role: UserRole, preferLoggedIn: boolean): AdminUserListItem | null => {
     if (preferLoggedIn && loggedInUser?.role === role) return loggedInUser;
@@ -144,6 +151,7 @@ export function resolveSimulatedViewerContext(
 
   let effectiveViewerId = loggedInViewerId;
   let effectiveViewerName = loggedInUser?.name ?? "본인";
+  let partnerTestHint: string | null = null;
 
   switch (testRole) {
     case "마스터":
@@ -165,18 +173,20 @@ export function resolveSimulatedViewerContext(
       break;
     }
     case "공식파트너": {
-      const u = pickUser("총판영업자", false);
+      const u = partnerScenario.official ?? pickUser("총판영업자", false);
       if (u) {
         effectiveViewerId = u.id;
         effectiveViewerName = u.name;
+        partnerTestHint = formatPartnerRoleTestHint("공식파트너", partnerScenario);
       }
       break;
     }
     case "제휴파트너": {
-      const u = pickUser("하위영업자", false);
+      const u = partnerScenario.affiliate ?? pickUser("하위영업자", false);
       if (u) {
         effectiveViewerId = u.id;
         effectiveViewerName = u.name;
+        partnerTestHint = formatPartnerRoleTestHint("제휴파트너", partnerScenario);
       }
       break;
     }
@@ -193,7 +203,9 @@ export function resolveSimulatedViewerContext(
   const isSimulating =
     testRole !== loggedInTestRole || effectiveViewerId !== loggedInViewerId;
   const simulationLabel = isSimulating
-    ? `${TEST_ROLE_LABEL[testRole]} 시점 · ${effectiveViewerName}`
+    ? partnerTestHint
+      ? `${TEST_ROLE_LABEL[testRole]} · ${effectiveViewerName} (${partnerTestHint})`
+      : `${TEST_ROLE_LABEL[testRole]} 시점 · ${effectiveViewerName}`
     : null;
 
   return {

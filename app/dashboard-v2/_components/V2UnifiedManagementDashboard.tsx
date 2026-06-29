@@ -86,8 +86,9 @@ export default function V2UnifiedManagementDashboard({
         viewerId,
         defaultTestRole,
         enrichedUsers,
+        leads,
       ),
-    [currentUserRole, viewerId, defaultTestRole, enrichedUsers],
+    [currentUserRole, viewerId, defaultTestRole, enrichedUsers, leads],
   );
 
   const displayLeads = useMemo(
@@ -248,7 +249,7 @@ export default function V2UnifiedManagementDashboard({
               users={enrichedUsers}
               viewerUserId={simulation.effectiveViewerId}
               assignedTo={analyticsTier === "staff" ? simulation.effectiveViewerId : undefined}
-              clientRefetch={analyticsTier === "executive" || analyticsTier === "partner"}
+              clientRefetch={analyticsTier === "executive"}
               viewerRole={viewerRole}
               currentUserRole={currentUserRole}
               canChangeStatus={permissions.canChangeLeadStatus}

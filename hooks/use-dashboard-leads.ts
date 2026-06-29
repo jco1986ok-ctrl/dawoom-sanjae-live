@@ -91,7 +91,17 @@ export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
 
       const data = json.data ?? [];
       const fn = scopeFilterRef.current;
-      setCustomers(fn ? data.filter(fn) : data);
+      const filtered = fn ? data.filter(fn) : data;
+
+      // 파트너 SSR 스코프 데이터가 있는데 API가 빈 배열이면 덮어쓰지 않음
+      if (filtered.length === 0 && initialRef.current.length > 0) {
+        setCustomers(
+          fn ? initialRef.current.filter(fn) : initialRef.current,
+        );
+        return;
+      }
+
+      setCustomers(filtered);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("[useDashboardLeads] 예외:", err);

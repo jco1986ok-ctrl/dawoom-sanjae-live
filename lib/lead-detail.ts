@@ -23,6 +23,8 @@ export interface LeadDetail {
   docs_status?: LeadDocsStatus | null;
   other_docs?: unknown;
   referred_by_user_id?: string | null;
+  /** 공식파트너(총판) 라인 소속 — RLS·라인 필터와 동기화 */
+  master_agent_id?: string | null;
   partner_name?: string | null;
   partner_agent_id?: string | null;
   inflow?: InflowInfo;

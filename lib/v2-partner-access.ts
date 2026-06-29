@@ -1,7 +1,7 @@
 import type { LeadDetail } from "@/lib/lead-detail";
 import type { AdminUserListItem } from "@/lib/user-lineage";
 import type { DashboardTestRole } from "@/lib/dashboard-rbac";
-import { filterLeadsByLine } from "@/lib/analytics-cockpit";
+import { filterLeadsByLine, leadBelongsToPartnerLine } from "@/lib/analytics-cockpit";
 
 /** 외부 영업 파트너 (공식·제휴) — 고객 DB 열람 전용 */
 export const V2_EXTERNAL_PARTNER_ROLES: readonly DashboardTestRole[] = [
@@ -56,5 +56,6 @@ export function leadMatchesPartnerViewerScope(
   role: DashboardTestRole,
   users: AdminUserListItem[],
 ): boolean {
-  return filterLeadsForPartnerViewer([lead], viewerUserId, role, users).length > 0;
+  if (!isV2ExternalPartnerRole(role) || !viewerUserId) return true;
+  return leadBelongsToPartnerLine(lead, viewerUserId, role, users);
 }

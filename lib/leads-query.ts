@@ -7,14 +7,14 @@ export const LEADS_LIST_SELECT =
   `${LEADS_LIST_SELECT_CORE}, pdf_url, docs_status, has_weim, other_docs` as const;
 
 export const LEADS_LIST_SELECT_WITH_PARTNER =
-  `${LEADS_LIST_SELECT}, referred_by_user_id` as const;
+  `${LEADS_LIST_SELECT}, referred_by_user_id, master_agent_id` as const;
 
 export const LEADS_LIST_SELECT_ADMIN =
   `${LEADS_LIST_SELECT_WITH_PARTNER}, assigned_to` as const;
 
 /** pdf_url 컬럼 없을 때 폴백용 */
 export const LEADS_LIST_SELECT_CORE_WITH_PARTNER =
-  `${LEADS_LIST_SELECT_CORE}, referred_by_user_id` as const;
+  `${LEADS_LIST_SELECT_CORE}, referred_by_user_id, master_agent_id` as const;
 
 export const LEADS_LIST_SELECT_CORE_ADMIN =
   `${LEADS_LIST_SELECT_CORE_WITH_PARTNER}, assigned_to` as const;
@@ -27,10 +27,10 @@ export const LEADS_LIST_SELECT_LEGACY =
   `${LEADS_LIST_SELECT_CORE_LEGACY}, pdf_url, docs_status, has_weim, other_docs` as const;
 
 export const LEADS_LIST_SELECT_WITH_PARTNER_LEGACY =
-  `${LEADS_LIST_SELECT_LEGACY}, referred_by_user_id` as const;
+  `${LEADS_LIST_SELECT_LEGACY}, referred_by_user_id, master_agent_id` as const;
 
 export const LEADS_LIST_SELECT_CORE_WITH_PARTNER_LEGACY =
-  `${LEADS_LIST_SELECT_CORE_LEGACY}, referred_by_user_id` as const;
+  `${LEADS_LIST_SELECT_CORE_LEGACY}, referred_by_user_id, master_agent_id` as const;
 
 export const LEADS_LIST_SELECT_ADMIN_LEGACY =
   `${LEADS_LIST_SELECT_WITH_PARTNER_LEGACY}, assigned_to` as const;
