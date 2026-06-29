@@ -138,7 +138,9 @@ export async function loadPartnerNetworkDashboard(
       ? await adminClient
           .from("leads")
           .select("referred_by_user_id, consultation_status")
-          .in("referred_by_user_id", Array.from(networkUserIds))
+          .or(
+            `referred_by_user_id.in.(${Array.from(networkUserIds).join(",")}),master_agent_id.in.(${Array.from(networkUserIds).join(",")})`,
+          )
       : { data: [] }
     : await adminClient
         .from("leads")

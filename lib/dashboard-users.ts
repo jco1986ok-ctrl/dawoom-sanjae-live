@@ -2,8 +2,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   hasOrgWideDashboardAccess,
+  isHeadPartnerRole,
   isPartnerScopedRole,
 } from "@/lib/dashboard-data-scope";
+import { fetchHeadPartnerNetworkUserRows } from "@/lib/head-partner-network";
 import type { LineageUserRow } from "@/lib/lead-lineage";
 import type { UserRole } from "@/lib/types";
 
@@ -49,6 +51,14 @@ export async function fetchUsersForLeadLineage(
 
   if (role === "노무사") {
     return fetchLineageUsersByIds(relatedUserIds);
+  }
+
+  if (isHeadPartnerRole(role)) {
+    const rows = await fetchHeadPartnerNetworkUserRows<Record<string, unknown>>(
+      viewerId,
+      LINEAGE_SELECT,
+    );
+    return mapLineageRows(rows);
   }
 
   if (isPartnerScopedRole(role)) {

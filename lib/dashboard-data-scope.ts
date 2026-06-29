@@ -10,6 +10,10 @@ export const PARTNER_SCOPED_ROLES = new Set<UserRole>([
   "하위영업자",
 ]);
 
+export function isHeadPartnerRole(role: UserRole): boolean {
+  return role === "총괄공식파트너";
+}
+
 export function hasOrgWideDashboardAccess(role: UserRole): boolean {
   return ORG_WIDE_ACCESS_ROLES.has(role);
 }

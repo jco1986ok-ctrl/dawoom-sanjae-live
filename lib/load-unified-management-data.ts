@@ -17,8 +17,10 @@ import type { ParentPartnerOption } from "@/lib/partner-lineage";
 import {
   getPartnerNetworkHeadId,
   hasOrgWideDashboardAccess,
+  isHeadPartnerRole,
   isPartnerScopedRole,
 } from "@/lib/dashboard-data-scope";
+import { fetchHeadPartnerNetworkUserIds, fetchHeadPartnerNetworkUserRows } from "@/lib/head-partner-network";
 
 import { OVERVIEW_STATUS_META } from "@/lib/lead-status";
 
@@ -123,6 +125,21 @@ async function loadLeadsForViewer(
     return result.data;
   }
 
+  if (isHeadPartnerRole(role)) {
+    const adminClient = createAdminClient();
+    const networkUserIds = Array.from(await fetchHeadPartnerNetworkUserIds(viewerId));
+    const result = await fetchDashboardLeads(adminClient, {
+      admin: true,
+      withPartner: true,
+      networkUserIds,
+      limit,
+    });
+    if (result.error) {
+      console.error("[loadUnifiedManagementData] head-partner leads 조회 실패:", result.error);
+    }
+    return result.data;
+  }
+
   const sessionClient = await createClient();
   const result = await fetchDashboardLeads(sessionClient, {
     withPartner: true,
@@ -161,6 +178,12 @@ async function loadUsersForViewer(
       console.error("[loadUnifiedManagementData] attorney users 조회 실패:", error);
     }
     return mapUserRows(data);
+  }
+
+  if (isHeadPartnerRole(role)) {
+    return mapUserRows(
+      await fetchHeadPartnerNetworkUserRows<Record<string, unknown>>(viewerId, USER_SELECT),
+    );
   }
 
   if (isPartnerScopedRole(role)) {

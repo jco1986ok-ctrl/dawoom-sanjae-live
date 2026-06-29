@@ -14,6 +14,8 @@ export type FetchDashboardLeadsOptions = {
   statusIn?: string[];
   statusEq?: string;
   orderAscending?: boolean;
+  /** 총괄파트너 네트워크 — referred_by 또는 master_agent_id 매칭 */
+  networkUserIds?: string[];
 };
 
 /** Supabase/PostgREST 컬럼·스키마 오류 */
@@ -58,6 +60,12 @@ export async function fetchDashboardLeads(
 
     if (options.assignedTo && selectHasAssignedTo(select)) {
       query = query.eq("assigned_to", options.assignedTo);
+    }
+    if (options.networkUserIds?.length) {
+      const ids = options.networkUserIds;
+      query = query.or(
+        `referred_by_user_id.in.(${ids.join(",")}),master_agent_id.in.(${ids.join(",")})`,
+      );
     }
     if (options.statusIn?.length) {
       query = query.in("consultation_status", options.statusIn);
