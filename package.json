@@ -11,7 +11,9 @@
     "check:board-status": "node scripts/check-board-scope.mjs status",
     "check:v2-scope": "node scripts/check-board-scope.mjs v2",
     "check:live-promote": "node scripts/check-board-scope.mjs live-promote",
-    "promote:checklist": "node scripts/promote-checklist.mjs"
+    "promote:checklist": "node scripts/promote-checklist.mjs",
+    "deploy:verify": "npm run build",
+    "deploy:live": "node scripts/deploy-live.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
