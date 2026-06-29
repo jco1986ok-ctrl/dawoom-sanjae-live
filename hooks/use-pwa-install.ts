@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isInAppBrowser } from "@/components/pwa/in-app-browser";
 import { pwaAssetUrl } from "@/lib/pwa-asset-version";
 import {
+  ALREADY_INSTALLED_ALERT,
   ANDROID_FALLBACK_ALERT,
   DESKTOP_FALLBACK_ALERT,
   detectPlatform,
@@ -51,7 +52,7 @@ export function usePwaInstall() {
     };
   }, []);
 
-  const canShowInstall = mounted && !isStandalone;
+  const canShowInstall = mounted;
 
   const runNativePrompt = useCallback(async (fallbackAlert: string) => {
     const promptEvent = installPromptRef.current;
@@ -83,6 +84,15 @@ export function usePwaInstall() {
       return;
     }
 
+    if (isStandalone) {
+      if (platform === "ios") {
+        setIosModalOpen(true);
+        return;
+      }
+      window.alert(ALREADY_INSTALLED_ALERT);
+      return;
+    }
+
     if (platform === "ios") {
       setIosModalOpen(true);
       return;
@@ -94,7 +104,7 @@ export function usePwaInstall() {
     }
 
     await runNativePrompt(DESKTOP_FALLBACK_ALERT);
-  }, [installing, platform, runNativePrompt]);
+  }, [installing, isStandalone, platform, runNativePrompt]);
 
   return {
     platform,
