@@ -5,7 +5,6 @@ import type { AppUser } from "@/lib/types";
 import DashboardNav from "./_components/DashboardNav";
 import DashboardNotices from "./_components/DashboardNotices";
 import { DASHBOARD_SHELL_X } from "./_components/dashboard-list-layout";
-import PwaInstallBanner from "@/components/pwa/PwaInstallBanner";
 import InAppBrowserEscape from "@/components/pwa/InAppBrowserEscape";
 import { fetchRecentNotices } from "./_actions/notices";
 import { Toaster } from "sonner";
@@ -64,7 +63,7 @@ export default async function DashboardLayout({
   const isAdmin = profile.role === "관리자";
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col pb-[calc(7rem+env(safe-area-inset-bottom,0px))] sm:pb-28">
+    <div className="min-h-screen bg-muted/30 flex flex-col">
       <DashboardNav user={profile as AppUser} />
       <main className="flex-1 w-full">
         <div className={`${DASHBOARD_SHELL_X} pt-4`}>
@@ -74,7 +73,6 @@ export default async function DashboardLayout({
           {children}
         </div>
       </main>
-      <PwaInstallBanner userId={user.id} role={profile.role} />
       <InAppBrowserEscape />
       <Toaster position="bottom-right" richColors closeButton />
     </div>

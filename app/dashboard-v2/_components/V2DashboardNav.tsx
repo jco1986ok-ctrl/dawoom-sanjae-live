@@ -12,6 +12,7 @@ import { DASHBOARD_SHELL_X } from "@/app/dashboard/_components/dashboard-list-la
 import V2NotificationBell from "./V2NotificationBell";
 import V2MyBoardNavLink from "./V2MyBoardNavLink";
 import { V2_MY_BOARD_ROUTE } from "@/lib/v2-my-board-route";
+import PwaInstallButton from "@/components/pwa/PwaInstallButton";
 
 const ROLE_LABEL: Record<string, string> = {
   총괄공식파트너: "총괄 파트너",
@@ -57,6 +58,7 @@ export default function V2DashboardNav({ user }: { user: AppUser }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <PwaInstallButton />
           <V2MyBoardNavLink
             variant="hero"
             className={`!text-xs !py-1.5 !px-2 sm:!px-3 !rounded-full !shadow-none border ${

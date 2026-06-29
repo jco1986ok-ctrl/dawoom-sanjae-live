@@ -8,6 +8,7 @@ import ChangePasswordModal from "./ChangePasswordModal";
 import ParoLogo, { PARO_GREETING } from "@/components/ParoLogo";
 import DashboardBoardSwitch, { DashboardBoardSwitchCompact } from "./DashboardBoardSwitch";
 import { LIVE_MY_BOARD_ROUTE } from "@/lib/live-my-board-route";
+import PwaInstallButton from "@/components/pwa/PwaInstallButton";
 
 const ROLE_LABEL: Record<string, string> = {
   총괄공식파트너: "총괄 파트너",
@@ -54,6 +55,7 @@ export default function DashboardNav({ user }: { user: AppUser }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <PwaInstallButton />
           <Link
             href={LIVE_MY_BOARD_ROUTE}
             className={`hidden sm:inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors shrink-0
