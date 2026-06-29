@@ -51,7 +51,7 @@ export function usePwaInstall() {
     };
   }, []);
 
-  const canShowInstall = mounted && !isStandalone && !isInAppBrowser();
+  const canShowInstall = mounted && !isStandalone;
 
   const runNativePrompt = useCallback(async (fallbackAlert: string) => {
     const promptEvent = installPromptRef.current;
@@ -75,6 +75,13 @@ export function usePwaInstall() {
 
   const handleInstall = useCallback(async () => {
     if (installing) return;
+
+    if (isInAppBrowser()) {
+      window.alert(
+        "카카오톡·네이버 등 앱 안 브라우저에서는 설치가 제한됩니다. 우측 상단 메뉴에서 Safari 또는 Chrome으로 열어 주세요.",
+      );
+      return;
+    }
 
     if (platform === "ios") {
       setIosModalOpen(true);

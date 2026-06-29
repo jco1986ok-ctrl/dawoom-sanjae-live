@@ -57,8 +57,7 @@ export default function V2DashboardNav({ user }: { user: AppUser }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <PwaInstallButton />
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
           <V2MyBoardNavLink
             variant="hero"
             className={`!text-xs !py-1.5 !px-2 sm:!px-3 !rounded-full !shadow-none border ${
@@ -84,6 +83,7 @@ export default function V2DashboardNav({ user }: { user: AppUser }) {
             </span>
           </div>
           <ChangePasswordModal />
+          <PwaInstallButton />
           <button
             type="button"
             onClick={handleLogout}

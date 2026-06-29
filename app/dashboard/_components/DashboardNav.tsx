@@ -54,8 +54,7 @@ export default function DashboardNav({ user }: { user: AppUser }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <PwaInstallButton />
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
           <Link
             href={LIVE_MY_BOARD_ROUTE}
             className={`hidden sm:inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors shrink-0
@@ -78,6 +77,7 @@ export default function DashboardNav({ user }: { user: AppUser }) {
             </span>
           </div>
           <ChangePasswordModal />
+          <PwaInstallButton />
           <button
             onClick={handleLogout}
             className="flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm transition-colors cursor-pointer"

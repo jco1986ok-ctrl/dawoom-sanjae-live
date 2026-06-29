@@ -33,6 +33,7 @@ import V2DailyBriefingModal from "@/app/dashboard-v2/_components/V2DailyBriefing
 import V2MyBoardTabPanel from "@/app/dashboard-v2/_components/V2MyBoardTabPanel";
 import { V2_PAGE_BG, v2SurfaceCard } from "@/app/dashboard-v2/_lib/v2-ui";
 import { cn } from "@/lib/utils";
+import PwaInstallButton from "@/components/pwa/PwaInstallButton";
 
 type TabId = "overview" | "customers" | "partners" | "myboard";
 
@@ -136,6 +137,7 @@ export default function UnifiedManagementDashboard({
             </div>
 
             <div className="shrink-0 self-start sm:self-auto flex flex-col items-stretch sm:items-end gap-3">
+              <PwaInstallButton variant="hero" />
               <button
                 type="button"
                 onClick={() => setActiveTab("myboard")}
