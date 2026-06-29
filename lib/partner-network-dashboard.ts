@@ -11,6 +11,7 @@ import {
   type ReferralTreeNode,
 } from "@/lib/build-referral-tree";
 import {
+  collectPartnerSubtreeIds,
   groupAffiliatesByOfficialPartner,
   type PartnerUserRow,
 } from "@/lib/build-organization-tree";
@@ -97,7 +98,20 @@ export async function loadPartnerNetworkDashboard(
     .in("role", ["하위영업자", "총판영업자", "총괄공식파트너", "관리자"])
     .order("name");
 
-  const allPartnerUsers = (partnerUsersRaw ?? []).map(mapUser);
+  let allPartnerUsers = (partnerUsersRaw ?? []).map(mapUser);
+
+  if (headPartnerId) {
+    const visibleIds = collectPartnerSubtreeIds(
+      headPartnerId,
+      allPartnerUsers.map((u) => ({
+        id: u.id,
+        role: u.role,
+        parent_agent_id: u.parent_agent_id,
+      })),
+    );
+    allPartnerUsers = allPartnerUsers.filter((u) => visibleIds.has(u.id));
+  }
+
   const userMap = buildPartnerUserMap(allPartnerUsers);
 
   const officials = allPartnerUsers.filter((u) => u.role === "총판영업자");

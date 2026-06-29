@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isDashboardV2MasterRole } from "@/lib/dashboard-v2-access";
 import { mapUserRoleToTestRole } from "@/lib/dashboard-rbac";
 import { loadUnifiedManagementData } from "@/lib/load-unified-management-data";
+import type { UserRole } from "@/lib/types";
 import V2UnifiedManagementDashboard from "./_components/V2UnifiedManagementDashboard";
 
 /**
@@ -26,7 +27,11 @@ export default async function DashboardV2Page() {
     redirect("/dashboard");
   }
 
-  const data = await loadUnifiedManagementData(user.id, profile.agent_id as string);
+  const data = await loadUnifiedManagementData(
+    user.id,
+    profile.role as UserRole,
+    profile.agent_id as string,
+  );
 
   return (
     <V2UnifiedManagementDashboard

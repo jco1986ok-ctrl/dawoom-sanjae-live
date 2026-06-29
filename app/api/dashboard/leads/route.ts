@@ -4,9 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchDashboardLeads } from "@/lib/fetch-dashboard-leads";
 import { enrichLeads } from "@/lib/enrich-leads";
 import { fetchUsersForLeadLineage } from "@/lib/dashboard-users";
+import type { UserRole } from "@/lib/types";
 
 /** Service Role로 전체 leads 조회 가능한 역할 */
-const FULL_ACCESS_ROLES = new Set(["관리자", "대표노무사", "총괄공식파트너"]);
+const ORG_WIDE_ACCESS_ROLES = new Set<UserRole>(["관리자", "대표노무사"]);
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "사용자 정보를 찾을 수 없습니다.", data: [] }, { status: 403 });
   }
 
-  const role = profile.role as string;
+  const role = profile.role as UserRole;
   const { searchParams } = new URL(request.url);
   const wantEnrich = searchParams.get("enrich") === "1";
   const assignedParam = searchParams.get("assignedTo");
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
   try {
     let result: Awaited<ReturnType<typeof fetchDashboardLeads>>;
 
-    if (FULL_ACCESS_ROLES.has(role)) {
+    if (ORG_WIDE_ACCESS_ROLES.has(role)) {
       const admin = createAdminClient();
       result = await fetchDashboardLeads(admin, {
         admin: true,
@@ -68,7 +69,16 @@ export async function GET(request: NextRequest) {
 
     if (wantEnrich && leads.length > 0) {
       try {
-        const users = await fetchUsersForLeadLineage();
+        const relatedUserIds = leads.flatMap((l) =>
+          [l.referred_by_user_id, l.master_agent_id, l.assigned_to].filter(
+            (id): id is string => Boolean(id),
+          ),
+        );
+        const users = await fetchUsersForLeadLineage(
+          profile.id as string,
+          role,
+          [...new Set(relatedUserIds)],
+        );
         leads = enrichLeads(leads, users);
       } catch (enrichErr) {
         console.warn("[api/dashboard/leads] enrich 실패:", enrichErr);

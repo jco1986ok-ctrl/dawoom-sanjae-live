@@ -39,7 +39,7 @@ export function createUnifiedDashboardPage(
 
     const row = profile as ProfileRow;
     const pageCopy = typeof copy === "function" ? copy(row) : copy;
-    const data = await loadUnifiedManagementData(user.id, row.agent_id ?? "");
+    const data = await loadUnifiedManagementData(user.id, row.role, row.agent_id ?? "");
 
     return (
       <UnifiedManagementDashboard
