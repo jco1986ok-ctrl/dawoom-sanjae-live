@@ -247,7 +247,7 @@ export default function UnifiedManagementDashboard({
               users={enrichedUsers}
               viewerUserId={simulation.effectiveViewerId}
               assignedTo={analyticsTier === "staff" ? simulation.effectiveViewerId : undefined}
-              clientRefetch={analyticsTier === "executive"}
+              clientRefetch={analyticsTier === "executive" || analyticsTier === "partner"}
               viewerRole={viewerRole}
               currentUserRole={currentUserRole}
               canChangeStatus={permissions.canChangeLeadStatus}

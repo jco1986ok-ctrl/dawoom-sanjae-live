@@ -47,7 +47,9 @@ export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
   initialRef.current = initialLeads;
 
   const [customers, setCustomers] = useState<LeadDetail[]>(initialLeads);
-  const [isLoading, setIsLoading] = useState(initialLeads.length === 0);
+  const [isLoading, setIsLoading] = useState(
+    clientRefetch && initialLeads.length === 0,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const enrichTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -119,8 +121,12 @@ export function useDashboardLeads(options: UseDashboardLeadsOptions = {}) {
       const fn = scopeFilterRef.current;
       setCustomers(fn ? initialLeads.filter(fn) : initialLeads);
       setIsLoading(false);
+      return;
     }
-  }, [initialLeads]);
+    if (!clientRefetch) {
+      setIsLoading(false);
+    }
+  }, [initialLeads, clientRefetch]);
 
   useEffect(() => {
     if (!clientRefetch) return;
