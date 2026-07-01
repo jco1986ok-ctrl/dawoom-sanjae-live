@@ -1,68 +1,32 @@
 import type { Metadata } from "next";
-import { createAdminClient } from "@/lib/supabase/admin";
 import HomeClient from "@/components/HomeClient";
-
-// ── 기본 메타 (파트너 코드 없을 때) ─────────────────────────
-const DEFAULT_TITLE       = "직업병 보상지원센터 | 무료 업무상 질병 산재 자가진단";
-const DEFAULT_DESCRIPTION = "몰라서 못 받는 업무상 질병 산재 보상금, 1분 만에 나의 업무상 질병 산재 승인 가능성을 무료로 확인해 보세요.";
-const SITE_NAME           = "직업병 보상지원센터";
+import {
+  buildPageMetadata,
+  DEFAULT_OG_DESCRIPTION,
+} from "@/lib/og-metadata";
+import { FALLBACK_REFERRER_DISPLAY } from "@/lib/capture-referrer";
+import { normalizePartnerName } from "@/lib/referral-resolve";
 
 type PageProps = {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; name?: string }>;
 };
 
-// ── 파트너 이름 조회 헬퍼 ────────────────────────────────────
-async function fetchPartnerName(ref: string): Promise<string | null> {
-  try {
-    const adminClient = createAdminClient();
-    const { data } = await adminClient
-      .from("users")
-      .select("name")
-      .eq("agent_id", ref)
-      .eq("is_active", true)
-      .maybeSingle();
-    return data?.name ?? null;
-  } catch {
-    return null;
-  }
+/** 카카오·OG 제목 — URL ?name= 은 무시, 항상 비실명 fallback */
+function buildOgTitle(): string {
+  return `🚨 혹시 나도 업무상 질병? [${FALLBACK_REFERRER_DISPLAY}]가 챙겨드리는 '숨은 업무상 질병 보상금' 찾기`;
 }
 
-// ── 동적 메타데이터 생성 ─────────────────────────────────────
-export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  const { ref } = await searchParams;
-
-  const partnerName = ref ? await fetchPartnerName(ref) : null;
-
-  if (!partnerName) {
-    return {
-      title: DEFAULT_TITLE,
-      description: DEFAULT_DESCRIPTION,
-      openGraph: {
-        title: DEFAULT_TITLE,
-        description: DEFAULT_DESCRIPTION,
-        siteName: SITE_NAME,
-        type: "website",
-      },
-    };
-  }
-
-  const title       = `파로스 노무법인 VIP 제휴파트너 [${partnerName}]님의 특별한 초대`;
-  const description = `${partnerName}님이 고객님의 잃어버린 업무상 질병 산재 보상금을 끝까지 챙겨드립니다. 지금 바로 숨은 보상금을 1분 만에 무료로 확인해보세요!`;
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      siteName: SITE_NAME,
-      type: "website",
-    },
-  };
+export async function generateMetadata(): Promise<Metadata> {
+  const title = buildOgTitle();
+  return buildPageMetadata(title, DEFAULT_OG_DESCRIPTION);
 }
 
-// ── 페이지 컴포넌트 (서버) ───────────────────────────────────
 export default async function HomePage({ searchParams }: PageProps) {
-  const { ref } = await searchParams;
-  return <HomeClient referralCode={ref ?? null} />;
+  const { ref, name } = await searchParams;
+  return (
+    <HomeClient
+      referralCode={ref?.trim() || null}
+      partnerName={normalizePartnerName(name)}
+    />
+  );
 }
