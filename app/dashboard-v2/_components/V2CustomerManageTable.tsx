@@ -50,7 +50,7 @@ import {
 import { useDashboardLeads } from "@/hooks/use-dashboard-leads";
 import DocumentsMatrixBadges from "@/app/dashboard/_components/DocumentsMatrixBadges";
 import { canViewDocumentsMatrix, canDownloadContractPdf } from "@/lib/lead-docs-status";
-import { PartnerConfirmBadge } from "@/app/dashboard/_components/PartnerConfirmBadge";
+import { PartnerInflowCell } from "@/app/dashboard/_components/PartnerInflowCell";
 import { BulkDocumentsDownloadButton } from "@/app/dashboard/_components/BulkDocumentsDownloadButton";
 import { DocCollectionProgressBadge, DocumentsWithProgress } from "@/app/dashboard/_components/DocCollectionProgressBadge";
 import { deleteLead } from "@/app/dashboard/_actions/leads";
@@ -539,7 +539,13 @@ export default function V2CustomerManageTable({
                   </div>
 
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <PartnerConfirmBadge onClick={() => openDetail(row)} />
+                    <PartnerInflowCell
+                      partnerName={row.partnerName}
+                      lineageLabel={row.lineageLabel}
+                      inflow={row.inflow}
+                      attributionTrace={row.attributionTrace}
+                      onClick={() => openDetail(row)}
+                    />
                     <div className="flex items-center gap-1 shrink-0">
                       {docsInteractive && (
                         <BulkDocumentsDownloadButton
@@ -671,7 +677,13 @@ export default function V2CustomerManageTable({
                     </div>
                   </FluidRowField>
                   <FluidRowField label="유입 파트너" className="shrink-0">
-                    <PartnerConfirmBadge onClick={() => openDetail(row)} />
+                    <PartnerInflowCell
+                      partnerName={row.partnerName}
+                      lineageLabel={row.lineageLabel}
+                      inflow={row.inflow}
+                      attributionTrace={row.attributionTrace}
+                      onClick={() => openDetail(row)}
+                    />
                   </FluidRowField>
                   {showProcessingHandler && (
                     <FluidRowField label={assigneeColumnLabel} className="shrink-0 min-w-[120px]">
@@ -850,7 +862,13 @@ export default function V2CustomerManageTable({
                       <V2LeadStatusBadge status={row.consultationStatus} />
                     </td>
                     <td className="py-3 px-2 whitespace-nowrap align-middle">
-                      <PartnerConfirmBadge onClick={() => openDetail(row)} />
+                      <PartnerInflowCell
+                      partnerName={row.partnerName}
+                      lineageLabel={row.lineageLabel}
+                      inflow={row.inflow}
+                      attributionTrace={row.attributionTrace}
+                      onClick={() => openDetail(row)}
+                    />
                     </td>
                     {showProcessingHandler && (
                       <td

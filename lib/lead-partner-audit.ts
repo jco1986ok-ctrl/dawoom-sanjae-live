@@ -2,8 +2,13 @@ import { NATURAL_INFLOW, FALLBACK_REFERRER_DISPLAY } from "@/lib/capture-referre
 import {
   describeAgentAccount,
   describeInflowLink,
-  resolvePartnerForLead,
 } from "@/lib/lead-attribution";
+import {
+  parseNotesAttribution,
+  resolveEffectiveAttribution,
+  resolvePartnerForLeadEnhanced,
+  type NotesAttribution,
+} from "@/lib/lead-attribution-resolve";
 import type { LeadDetail } from "@/lib/lead-detail";
 import { enrichLeadRow } from "@/lib/enrich-leads";
 import type { LineageUserRow } from "@/lib/lead-lineage";
@@ -27,13 +32,8 @@ export const PARTNER_AUDIT_STATUS_LABEL: Record<PartnerAuditStatus, string> = {
   notes_traceable: "메모에만 단서 있음",
 };
 
-export type NotesAttribution = {
-  referrerLine: string | null;
-  linkLine: string | null;
-  refFromLink: string | null;
-  nameFromLink: string | null;
-  isNaturalLink: boolean;
-};
+export type { NotesAttribution } from "@/lib/lead-attribution-resolve";
+export { parseNotesAttribution } from "@/lib/lead-attribution-resolve";
 
 export type PartnerAuditRow = {
   id: string;
@@ -72,43 +72,6 @@ type LeadInput = Pick<
   | "referred_by_user_id"
   | "master_agent_id"
 >;
-
-const REFERRER_LINE_RE = /^\[추천인\]\s*(.+)$/i;
-const LINK_LINE_RE = /^\[유입 링크\]\s*(.+)$/i;
-const REF_FROM_LINK_RE = /\?ref=([^\s&]+)/i;
-const NAME_FROM_LINK_RE = /\?name=([^\s(]+)/i;
-
-export function parseNotesAttribution(notes: string | null | undefined): NotesAttribution {
-  let referrerLine: string | null = null;
-  let linkLine: string | null = null;
-
-  if (notes) {
-    for (const raw of notes.split("\n")) {
-      const line = raw.trim();
-      const refMatch = line.match(REFERRER_LINE_RE);
-      if (refMatch) {
-        referrerLine = refMatch[1].trim();
-        continue;
-      }
-      const linkMatch = line.match(LINK_LINE_RE);
-      if (linkMatch) {
-        linkLine = linkMatch[1].trim();
-      }
-    }
-  }
-
-  const refFromLink = linkLine?.match(REF_FROM_LINK_RE)?.[1]?.trim() ?? null;
-  const nameFromLink = linkLine?.match(NAME_FROM_LINK_RE)?.[1]?.trim() ?? null;
-  const isNaturalLink = Boolean(linkLine && /자연유입/.test(linkLine));
-
-  return {
-    referrerLine,
-    linkLine,
-    refFromLink,
-    nameFromLink,
-    isNaturalLink,
-  };
-}
 
 function classifyStatus(
   lead: LeadInput,
@@ -166,22 +129,18 @@ export function auditLeadPartnerAttribution(
   userByAgentId: Record<string, LineageUserRow>,
 ): PartnerAuditRow {
   const enriched = enrichLeadRow(lead, userById, userByAgentId);
-  const notesAttr = parseNotesAttribution(lead.notes);
-  const inflow = describeInflowLink(lead.referral_source, lead.referrer);
-  const partner = resolvePartnerForLead(
-    lead.referred_by_user_id,
-    lead.referral_source,
-    userById,
-    userByAgentId,
-  );
-  const agent = describeAgentAccount(partner, lead.referral_source);
+  const effective = resolveEffectiveAttribution(lead);
+  const notesAttr = effective.notesAttribution;
+  const inflow = describeInflowLink(effective.referralSource, effective.referrer);
+  const partner = resolvePartnerForLeadEnhanced(lead, userById, userByAgentId);
+  const agent = describeAgentAccount(partner, effective.referralSource);
   const partnerResolved = Boolean(partner?.name && partner.agent_id && !agent.unresolved);
 
   const status = classifyStatus(
     lead,
     partnerResolved,
     agent.unresolved,
-    lead.referral_source,
+    effective.referralSource,
     notesAttr,
   );
 
@@ -207,8 +166,8 @@ export function auditLeadPartnerAttribution(
     lineageLabel: enriched.lineage_label || formatLeadLineageLabel(enriched.lineage),
     partnerName: enriched.partner_name ?? agent.name,
     partnerAgentId: enriched.partner_agent_id ?? agent.agentId,
-    referral_source: lead.referral_source,
-    referrer: lead.referrer ?? notesAttr.referrerLine,
+    referral_source: effective.referralSource,
+    referrer: effective.referrer,
     referred_by_user_id: lead.referred_by_user_id ?? null,
     master_agent_id: lead.master_agent_id ?? null,
     inflowLabel: inflow.label,

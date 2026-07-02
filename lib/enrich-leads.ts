@@ -7,10 +7,15 @@ import {
 import {
   describeAgentAccount,
   describeInflowLink,
-  resolvePartnerForLead,
   type AgentAccountInfo,
   type InflowInfo,
 } from "@/lib/lead-attribution";
+import {
+  buildAttributionTraceLabel,
+  formatPartnerDisplayLabel,
+  resolveEffectiveAttribution,
+  resolvePartnerForLeadEnhanced,
+} from "@/lib/lead-attribution-resolve";
 import type { UserLineageNode } from "@/lib/user-lineage";
 
 export type EnrichedLead = LeadDetail & {
@@ -18,6 +23,7 @@ export type EnrichedLead = LeadDetail & {
   agent: AgentAccountInfo;
   lineage: UserLineageNode[];
   lineage_label: string;
+  attribution_trace?: string | null;
 };
 
 type LeadRow = LeadDetail & {
@@ -32,12 +38,8 @@ export function enrichLeadRow(
   userByAgentId: Record<string, LineageUserRow>,
   extra?: Partial<LeadDetail>,
 ): EnrichedLead {
-  const partner = resolvePartnerForLead(
-    lead.referred_by_user_id,
-    lead.referral_source,
-    userById,
-    userByAgentId,
-  );
+  const effective = resolveEffectiveAttribution(lead);
+  const partner = resolvePartnerForLeadEnhanced(lead, userById, userByAgentId);
 
   const partnerId = partner?.id ?? lead.referred_by_user_id ?? null;
   const lineage = buildLeadLineage(partnerId, userById);
@@ -45,19 +47,29 @@ export function enrichLeadRow(
   const parentId = partner?.parent_agent_id ?? null;
   const parentInfo = parentId ? userById[parentId] : null;
 
-  const inflow = describeInflowLink(lead.referral_source, lead.referrer);
-  const agent = describeAgentAccount(partner, lead.referral_source);
+  const inflow = describeInflowLink(effective.referralSource, effective.referrer);
+  const agent = describeAgentAccount(partner, effective.referralSource);
+  const partnerName = formatPartnerDisplayLabel({
+    partner_name: partner?.name ?? extra?.partner_name ?? null,
+    lineage,
+    agent,
+    referral_source: effective.referralSource,
+    notesAttribution: effective.notesAttribution,
+  });
 
   return {
     ...lead,
     ...extra,
-    partner_name: partner?.name ?? extra?.partner_name ?? null,
+    referral_source: effective.referralSource ?? lead.referral_source,
+    referrer: effective.referrer ?? lead.referrer,
+    partner_name: partnerName,
     partner_agent_id: partner?.agent_id ?? agent.agentId,
     parent_partner_name: parentInfo?.name ?? extra?.parent_partner_name ?? null,
     inflow,
     agent,
     lineage,
     lineage_label: formatLeadLineageLabel(lineage),
+    attribution_trace: buildAttributionTraceLabel(effective, partnerName),
   };
 }
 

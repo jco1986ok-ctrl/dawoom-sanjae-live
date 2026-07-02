@@ -51,7 +51,7 @@ import {
 import { useDashboardLeads } from "@/hooks/use-dashboard-leads";
 import DocumentsMatrixBadges from "./DocumentsMatrixBadges";
 import { canViewDocumentsMatrix, canDownloadContractPdf } from "@/lib/lead-docs-status";
-import { PartnerConfirmBadge } from "./PartnerConfirmBadge";
+import { PartnerInflowCell } from "./PartnerInflowCell";
 import { BulkDocumentsDownloadButton } from "./BulkDocumentsDownloadButton";
 import { DocCollectionProgressBadge, DocumentsWithProgress } from "./DocCollectionProgressBadge";
 import { deleteLead } from "../_actions/leads";
@@ -339,7 +339,13 @@ export default function AttorneyCustomerManageTable({
                   </div>
 
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <PartnerConfirmBadge onClick={() => openDetail(row)} />
+                    <PartnerInflowCell
+                      partnerName={row.partnerName}
+                      lineageLabel={row.lineageLabel}
+                      inflow={row.inflow}
+                      attributionTrace={row.attributionTrace}
+                      onClick={() => openDetail(row)}
+                    />
                     <div className="flex items-center gap-1 shrink-0">
                       {docsInteractive && (
                         <BulkDocumentsDownloadButton
@@ -430,7 +436,13 @@ export default function AttorneyCustomerManageTable({
                     </div>
                   </FluidRowField>
                   <FluidRowField label="유입 파트너" className="shrink-0">
-                    <PartnerConfirmBadge onClick={() => openDetail(row)} />
+                    <PartnerInflowCell
+                      partnerName={row.partnerName}
+                      lineageLabel={row.lineageLabel}
+                      inflow={row.inflow}
+                      attributionTrace={row.attributionTrace}
+                      onClick={() => openDetail(row)}
+                    />
                   </FluidRowField>
                   <FluidRowField label="날짜" className="shrink-0 w-32">
                     <span className="text-slate-500 text-xs tabular-nums">{row.submittedAt}</span>
@@ -592,7 +604,13 @@ export default function AttorneyCustomerManageTable({
                       <LeadStatusBadge status={row.consultationStatus} />
                     </td>
                     <td className="py-3 px-2 whitespace-nowrap align-middle">
-                      <PartnerConfirmBadge onClick={() => openDetail(row)} />
+                      <PartnerInflowCell
+                      partnerName={row.partnerName}
+                      lineageLabel={row.lineageLabel}
+                      inflow={row.inflow}
+                      attributionTrace={row.attributionTrace}
+                      onClick={() => openDetail(row)}
+                    />
                     </td>
                     {showDocsMatrix && (
                       <td className="py-3 px-3 align-middle overflow-visible">

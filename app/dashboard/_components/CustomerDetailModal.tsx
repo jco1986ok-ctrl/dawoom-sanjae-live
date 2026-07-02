@@ -74,6 +74,7 @@ export interface CustomerDetailRow {
   lineage?: UserLineageNode[];
   lineageLabel?: string;
   inflow?: InflowInfo | null;
+  attributionTrace?: string | null;
   referralSource?: string | null;
   referrer?: string | null;
   /** V2 처리 담당자(assigned_user_id) 표시명 */
@@ -446,6 +447,11 @@ export function CustomerDetailModal({
                         : row.partnerName !== "—"
                           ? row.partnerName
                           : "유입 계정 미확인"}
+                    </p>
+                  )}
+                  {row.attributionTrace && (
+                    <p className="text-[10px] text-violet-700 mt-2 break-keep">
+                      추적: {row.attributionTrace}
                     </p>
                   )}
                 </div>
@@ -902,6 +908,10 @@ export function buildCustomerDetailRow(lead: import("./LeadDetailPanel").LeadDet
     partnerName:
       lead.partner_name ??
       lead.lineage?.[lead.lineage.length - 1]?.name ??
+      lead.agent?.name ??
+      (lead.referral_source?.startsWith("name:")
+        ? lead.referral_source.slice(5)
+        : null) ??
       "—",
     assignedAttorneyName: lead.assigned_attorney_name ?? null,
     notes,
@@ -914,6 +924,8 @@ export function buildCustomerDetailRow(lead: import("./LeadDetailPanel").LeadDet
     lineage: lead.lineage ?? [],
     lineageLabel: lead.lineage_label ?? undefined,
     inflow: lead.inflow ?? null,
+    attributionTrace:
+      lead.attribution_trace ?? null,
     referralSource: lead.referral_source ?? null,
     referrer: lead.referrer ?? null,
   };

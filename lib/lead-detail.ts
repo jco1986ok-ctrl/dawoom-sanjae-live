@@ -31,6 +31,7 @@ export interface LeadDetail {
   agent?: AgentAccountInfo;
   lineage?: UserLineageNode[];
   lineage_label?: string;
+  attribution_trace?: string | null;
   parent_partner_name?: string | null;
   is_viewer_direct?: boolean;
   assigned_to?: string | null;
